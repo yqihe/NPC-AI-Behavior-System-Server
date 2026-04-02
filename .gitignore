@@ -26,7 +26,30 @@ go.work.sum
 
 # env file
 .env
+.env.*
+!.env.example
 
 # Editor/IDE
-# .idea/
-# .vscode/
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Claude Code
+.claude/settings.json
+
+# Build output
+bin/
+dist/
+
+# Log files
+*.log
+logs/
+
+# MongoDB/Redis local data
+data/

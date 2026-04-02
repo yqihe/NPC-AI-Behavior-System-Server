@@ -1,0 +1,46 @@
+{
+    "initial_state": "Idle",
+    "states": [
+        {"name": "Idle"},
+        {"name": "Alarmed"},
+        {"name": "Flee"},
+        {"name": "Cower"},
+        {"name": "Dead"}
+    ],
+    "transitions": [
+        {
+            "from": "Idle",
+            "to": "Alarmed",
+            "priority": 10,
+            "condition": {"key": "last_event_type", "op": "!=", "value": ""}
+        },
+        {
+            "from": "Alarmed",
+            "to": "Flee",
+            "priority": 10,
+            "condition": {
+                "and": [
+                    {"key": "threat_level", "op": ">=", "value": 50},
+                    {"key": "threat_expire_at", "op": ">", "ref_key": "current_time"}
+                ]
+            }
+        },
+        {
+            "from": "Alarmed",
+            "to": "Idle",
+            "priority": 5,
+            "condition": {"key": "last_event_type", "op": "==", "value": ""}
+        },
+        {
+            "from": "Flee",
+            "to": "Idle",
+            "priority": 5,
+            "condition": {
+                "or": [
+                    {"key": "threat_level", "op": "<", "value": 20},
+                    {"key": "threat_expire_at", "op": "<=", "ref_key": "current_time"}
+                ]
+            }
+        }
+    ]
+}

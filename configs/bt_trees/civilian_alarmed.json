@@ -1,0 +1,4 @@
+{
+    "type": "stub_action",
+    "params": {"name": "alarmed_look_around", "result": "success"}
+}

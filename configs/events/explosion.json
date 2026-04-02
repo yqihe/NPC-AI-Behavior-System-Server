@@ -1,0 +1,7 @@
+{
+    "name": "explosion",
+    "default_severity": 80,
+    "default_ttl": 15.0,
+    "perception_mode": "auditory",
+    "range": 500.0
+}

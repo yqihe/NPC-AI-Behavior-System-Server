@@ -50,3 +50,52 @@ func (s *JSONSource) LoadBTTree(treeName string) ([]byte, error) {
 
 	return data, nil
 }
+
+// LoadEventConfig 加载事件类型配置：configs/events/<eventType>.json
+func (s *JSONSource) LoadEventConfig(eventType string) ([]byte, error) {
+	path := filepath.Join(s.basePath, "events", eventType+".json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("config: load event %q: %w", eventType, err)
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("config: event %q is not valid JSON", eventType)
+	}
+	return data, nil
+}
+
+// LoadAllEventConfigs 遍历 configs/events/ 目录，加载所有事件类型配置
+func (s *JSONSource) LoadAllEventConfigs() (map[string][]byte, error) {
+	dir := filepath.Join(s.basePath, "events")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, fmt.Errorf("config: read events dir: %w", err)
+	}
+
+	result := make(map[string][]byte)
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		name := entry.Name()[:len(entry.Name())-5] // 去掉 .json 后缀
+		data, err := s.LoadEventConfig(name)
+		if err != nil {
+			return nil, err
+		}
+		result[name] = data
+	}
+	return result, nil
+}
+
+// LoadNPCTypeConfig 加载 NPC 类型配置：configs/npc_types/<npcType>.json
+func (s *JSONSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {
+	path := filepath.Join(s.basePath, "npc_types", npcType+".json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("config: load NPC type %q: %w", npcType, err)
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("config: NPC type %q is not valid JSON", npcType)
+	}
+	return data, nil
+}

@@ -1,0 +1,7 @@
+{
+    "name": "gunshot",
+    "default_severity": 90,
+    "default_ttl": 10.0,
+    "perception_mode": "auditory",
+    "range": 300.0
+}

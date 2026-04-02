@@ -67,3 +67,103 @@ func TestLoadBTTree_InvalidJSON(t *testing.T) {
 		t.Fatal("expected error for invalid JSON")
 	}
 }
+
+// --- LoadEventConfig ---
+
+func TestLoadEventConfig_Explosion(t *testing.T) {
+	root := projectRoot(t)
+	src := config.NewJSONSource(filepath.Join(root, "configs"))
+
+	data, err := src.LoadEventConfig("explosion")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("expected non-empty data")
+	}
+}
+
+func TestLoadEventConfig_NotFound(t *testing.T) {
+	src := config.NewJSONSource("nonexistent_dir")
+	_, err := src.LoadEventConfig("explosion")
+	if err == nil {
+		t.Fatal("expected error for missing event config")
+	}
+}
+
+func TestLoadEventConfig_InvalidJSON(t *testing.T) {
+	tmpDir := t.TempDir()
+	evtDir := filepath.Join(tmpDir, "events")
+	os.MkdirAll(evtDir, 0755)
+	os.WriteFile(filepath.Join(evtDir, "bad.json"), []byte(`{invalid`), 0644)
+
+	src := config.NewJSONSource(tmpDir)
+	_, err := src.LoadEventConfig("bad")
+	if err == nil {
+		t.Fatal("expected error for invalid JSON")
+	}
+}
+
+// --- LoadAllEventConfigs ---
+
+func TestLoadAllEventConfigs(t *testing.T) {
+	root := projectRoot(t)
+	src := config.NewJSONSource(filepath.Join(root, "configs"))
+
+	result, err := src.LoadAllEventConfigs()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) == 0 {
+		t.Fatal("expected at least one event config")
+	}
+	if _, ok := result["explosion"]; !ok {
+		t.Fatal("expected explosion config in results")
+	}
+}
+
+func TestLoadAllEventConfigs_EmptyDir(t *testing.T) {
+	tmpDir := t.TempDir()
+	evtDir := filepath.Join(tmpDir, "events")
+	os.MkdirAll(evtDir, 0755)
+
+	src := config.NewJSONSource(tmpDir)
+	result, err := src.LoadAllEventConfigs()
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(result) != 0 {
+		t.Fatalf("expected 0 configs, got %d", len(result))
+	}
+}
+
+func TestLoadAllEventConfigs_DirNotExist(t *testing.T) {
+	src := config.NewJSONSource("nonexistent_dir")
+	_, err := src.LoadAllEventConfigs()
+	if err == nil {
+		t.Fatal("expected error for missing events dir")
+	}
+}
+
+// --- LoadNPCTypeConfig ---
+
+func TestLoadNPCTypeConfig_Civilian(t *testing.T) {
+	root := projectRoot(t)
+	src := config.NewJSONSource(filepath.Join(root, "configs"))
+
+	data, err := src.LoadNPCTypeConfig("civilian")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if len(data) == 0 {
+		t.Fatal("expected non-empty data")
+	}
+}
+
+func TestLoadNPCTypeConfig_NotFound(t *testing.T) {
+	src := config.NewJSONSource("nonexistent_dir")
+	_, err := src.LoadNPCTypeConfig("civilian")
+	if err == nil {
+		t.Fatal("expected error for missing NPC type config")
+	}
+}

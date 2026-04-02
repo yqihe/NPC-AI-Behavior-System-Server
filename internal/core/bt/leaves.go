@@ -107,6 +107,46 @@ func setBBValueFactory(params json.RawMessage) (Node, error) {
 	return &setBBValue{key: cfg.Key, value: cfg.Value}, nil
 }
 
+// --- stub_action ---
+
+// stubAction 占位行为节点，根据 params.result 返回固定状态
+// 用于未实现的业务 Action（move_to、play_animation 等）
+type stubAction struct {
+	name   string
+	result Status
+}
+
+func (s *stubAction) Tick(ctx *Context) Status {
+	return s.result
+}
+
+func stubActionFactory(params json.RawMessage) (Node, error) {
+	var cfg struct {
+		Name   string `json:"name"`
+		Result string `json:"result"` // "success", "failure", "running"
+	}
+	if err := json.Unmarshal(params, &cfg); err != nil {
+		return nil, fmt.Errorf("stub_action: %w", err)
+	}
+	if cfg.Name == "" {
+		return nil, fmt.Errorf("stub_action: name is required")
+	}
+
+	var status Status
+	switch cfg.Result {
+	case "success", "":
+		status = Success
+	case "failure":
+		status = Failure
+	case "running":
+		status = Running
+	default:
+		return nil, fmt.Errorf("stub_action: unknown result %q", cfg.Result)
+	}
+
+	return &stubAction{name: cfg.Name, result: status}, nil
+}
+
 // --- 内部比较辅助 ---
 
 func toFloat64(v any) (float64, bool) {

@@ -1,0 +1,4 @@
+{
+    "type": "stub_action",
+    "params": {"name": "flee_run_away", "result": "success"}
+}

@@ -64,5 +64,6 @@ func DefaultRegistry() *Registry {
 	r.Register("check_bb_float", checkBBFloatFactory)
 	r.Register("check_bb_string", checkBBStringFactory)
 	r.Register("set_bb_value", setBBValueFactory)
+	r.Register("stub_action", stubActionFactory)
 	return r
 }

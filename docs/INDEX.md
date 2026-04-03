@@ -12,6 +12,8 @@
 |------|----------|----------|
 | [dev-rules.md](development/dev-rules.md) | 日志格式、文档同步、Git 规则、Agent 规则、Docker 构建与运行、经验沉淀 | 所有开发活动 |
 | [go-pitfalls.md](development/go-pitfalls.md) | Go 常见陷阱（并发、数据结构、接口、错误处理、性能） | 写代码和 review 时 |
+| [deployment.md](deployment.md) | 环境规范（dev/prod 区分）、部署流程、环境变量、文件规范 | 部署和环境切换时 |
+| [protocol.md](protocol.md) | WebSocket 协议规范（消息类型、字段、交互流程） | 客户端对接时 |
 
 ## specs/ — 功能层 Spec（需求 → 设计 → 任务）
 | 目录 | 状态 | 内容概括 |
@@ -19,7 +21,9 @@
 | [specs/core-engine/](specs/core-engine/) | 已完成 | Blackboard、FSM、BT、Rule 四大引擎 |
 | [specs/runtime-layer/](specs/runtime-layer/) | 已完成 | 事件总线、感知过滤、决策中心、NPC 调度 |
 | [specs/experiment-layer/](specs/experiment-layer/) | 已完成 | 5 模式对照实验框架 + 定性/定量数据采集（含 [data-collection-guide.md](specs/experiment-layer/data-collection-guide.md)） |
-| [specs/gateway-layer/](specs/gateway-layer/) | 开发中 | WebSocket 连接、消息路由、状态广播 |
+| [specs/gateway-layer/](specs/gateway-layer/) | 已完成 | WebSocket 连接、消息路由、状态广播 |
+| [specs/extension-validation/](specs/extension-validation/) | 已完成 | 扩展轴验证（fire 事件 + police NPC，零代码改动） |
+| [specs/mongo-source/](specs/mongo-source/) | 已完成 | MongoDB 配置源 + dev/prod 环境切换 |
 
 ## history/ — 历史参考
 | 文档 | 内容概括 | 何时查阅 |

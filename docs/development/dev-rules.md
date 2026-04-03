@@ -121,3 +121,6 @@ docker compose down
 | experiment-layer 立论 | 把"决策中心有价值"当创新点设计实验，但决策中心是工业标配。真正创新是三层协作的架构模式。实验数据中 FSM+DC ≈ Hybrid、BT+DC ≈ Hybrid，说明实验完全没有证明 BT 和 FSM 各自的不可替代性 | `red-lines.md` → 禁止实验作弊（立论部分） |
 | experiment-layer 规模 | 只用 5 状态 3 事件的玩具规模测试，无法体现纯 FSM 状态爆炸和纯 BT 树膨胀的痛点。架构优势在规模增长后才显现，必须测试不同规模下的交叉点 | `red-lines.md` → 禁止只用玩具规模验证架构 |
 | experiment-layer 指标 | 响应延迟(Tick 数)所有模式都是 0.0，说明指标设计有问题——同一 Tick 内完成全部处理，Tick 数无区分力。应改为墙钟时间(ns)或重新设计量化方式 | `red-lines.md` → 禁止接受全零指标数据 |
+| gateway-layer 代码审查 | 路径穿越、Broadcast 死锁、BT key 运行时 panic、nil slice JSON null、条件歧义——6 个 bug 集中在 Gateway 首版代码中 | `red-lines.md` → 禁止安全隐患；`go-pitfalls.md` → channel 生命周期、nil slice JSON |
+| mongo-source 类型丢失 | `json.Unmarshal` 到 `any` 把整数变 float64，存入 MongoDB 后反序列化 int 字段失败。涉及外部依赖的功能必须端到端验证，不能只跑单元测试 | `go-pitfalls.md` → json int/float 丢失；`red-lines.md` → 禁止死配置 |
+| mongo-source .env 命名 | `.env.prod` 被 `.env.*` gitignore 规则挡住，模板文件和实际文件没区分。模板用 `.example` 后缀，实际文件保持忽略 | `deployment.md` → 文件规范 |

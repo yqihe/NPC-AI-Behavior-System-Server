@@ -1,0 +1,28 @@
+{
+    "type": "selector",
+    "children": [
+        {
+            "type": "sequence",
+            "children": [
+                {"type": "check_bb_float", "params": {"key": "threat_level", "op": ">=", "value": 50}},
+                {"type": "set_bb_value", "params": {"key": "fsm_state", "value": "Flee"}},
+                {"type": "stub_action", "params": {"name": "flee_run_away", "result": "success"}}
+            ]
+        },
+        {
+            "type": "sequence",
+            "children": [
+                {"type": "check_bb_string", "params": {"key": "last_event_type", "op": "!=", "value": ""}},
+                {"type": "set_bb_value", "params": {"key": "fsm_state", "value": "Alarmed"}},
+                {"type": "stub_action", "params": {"name": "alarmed_look_around", "result": "success"}}
+            ]
+        },
+        {
+            "type": "sequence",
+            "children": [
+                {"type": "set_bb_value", "params": {"key": "fsm_state", "value": "Idle"}},
+                {"type": "stub_action", "params": {"name": "idle_wander", "result": "success"}}
+            ]
+        }
+    ]
+}

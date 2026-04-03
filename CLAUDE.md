@@ -28,19 +28,28 @@
 ## 开发指令
 
 ```bash
-# 运行服务端
-go run cmd/server/main.go
+# Docker Compose 启动全部服务（代码改动后必须加 --build）
+docker compose up --build
 
-# 运行全部测试
+# 后台启动
+docker compose up --build -d
+
+# 查看服务日志
+docker compose logs -f server
+
+# 停止全部服务
+docker compose down
+
+# 本地运行全部测试
 go test ./...
 
-# 运行 e2e 测试
+# 本地运行 e2e 测试
 go test ./test/e2e/... -v
 
-# 仅编译核心（不含实验框架）
+# 本地编译（不含实验框架）
 go build ./cmd/server/
 
-# 编译含实验框架
+# 本地编译（含实验框架）
 go build -tags experiment ./cmd/server/
 ```
 

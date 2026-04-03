@@ -1,0 +1,8 @@
+{
+    "addr": ":9820",
+    "tick_rate_ms": 100,
+    "decision_decay_rate": 5.0,
+    "log_level": "debug",
+    "log_format": "text",
+    "mongo_uri": ""
+}

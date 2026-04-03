@@ -33,6 +33,7 @@ log.Debug("bt.tick", "npc_id", npc.ID, "node", node.Name(), "result", result)
 
 ### 改完代码后检查的文档
 
+- `docs/specs/<当前层>/` — 实现偏离了 spec 设计时，必须同步更新 requirements.md / design.md / tasks.md
 - `CLAUDE.md` — 目录结构、技术栈、开发指令是否变化
 - `docs/INDEX.md` — 是否有新文档需要加入索引
 - `docs/architecture/red-lines.md` — 是否发现新的禁令需要补充
@@ -71,6 +72,46 @@ log.Debug("bt.tick", "npc_id", npc.ID, "node", node.Name(), "result", result)
 | 新的架构决策 | `docs/architecture/decisions.md` |
 | Skill 流程缺陷 | 对应的 Skill 文件 |
 | 项目特有的约定 | `CLAUDE.md` 或 `docs/development/dev-rules.md` |
+
+## Docker 构建与运行
+
+服务部署和启动通过 Docker Compose 编排，保证 Go 服务端 + MongoDB + Redis 环境一致。
+
+### 服务编排
+
+通过 `docker-compose.yml` 管理：
+
+| 服务 | 镜像 | 说明 |
+|------|------|------|
+| `server` | 本地构建（多阶段 Dockerfile） | Go 服务端 |
+| `mongo` | `mongo:7` | 配置存储 + 数据 |
+| `redis` | `redis:7-alpine` | 热状态缓存 |
+
+### 日常命令
+
+```bash
+# 启动全部服务（代码改动后必须加 --build）
+docker compose up --build
+
+# 后台启动
+docker compose up --build -d
+
+# 查看日志
+docker compose logs -f server
+
+# 停止
+docker compose down
+```
+
+### Dockerfile 规范
+
+- 多阶段构建：`builder` 阶段 `go build`，`runtime` 阶段仅含二进制
+- 先复制 `go.mod`/`go.sum` 再复制源码，利用层缓存
+- 环境变量通过 Compose 或 `.env` 注入，不硬编码在 Dockerfile 中
+
+### 本地开发不受限
+
+单元测试、`go run` 快速调试等本地操作不受 Docker 约束。Docker 解决的是"多服务联合启动的环境一致性"，不是替代所有本地命令。
 
 ## 已沉淀教训
 

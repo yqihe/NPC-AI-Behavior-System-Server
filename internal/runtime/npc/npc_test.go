@@ -19,7 +19,7 @@ func TestParseNPCTypeConfig(t *testing.T) {
 	data := []byte(`{
 		"type_name": "civilian",
 		"fsm_ref": "civilian",
-		"bt_refs": {"Idle": "civilian_idle", "Flee": "civilian_flee"},
+		"bt_refs": {"Idle": "civilian/idle", "Flee": "civilian/flee"},
 		"perception": {"visual_range": 200, "auditory_range": 500}
 	}`)
 	cfg, err := ParseNPCTypeConfig(data)

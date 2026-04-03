@@ -2,9 +2,9 @@
     "type_name": "civilian",
     "fsm_ref": "civilian",
     "bt_refs": {
-        "Idle": "civilian_idle",
-        "Alarmed": "civilian_alarmed",
-        "Flee": "civilian_flee"
+        "Idle": "civilian/idle",
+        "Alarmed": "civilian/alarmed",
+        "Flee": "civilian/flee"
     },
     "perception": {
         "visual_range": 200.0,

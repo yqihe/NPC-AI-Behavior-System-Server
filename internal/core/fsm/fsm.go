@@ -3,6 +3,7 @@ package fsm
 import (
 	"fmt"
 	"sort"
+	"sync"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/rule"
@@ -42,6 +43,7 @@ type StateCallback func(state string)
 
 // FSM 配置驱动的有限状态机
 type FSM struct {
+	mu          sync.RWMutex
 	current     string
 	stateSet    map[string]bool                // 合法状态集合
 	transitions map[string][]TransitionConfig  // from_state → 按 priority 降序排列的转换列表
@@ -133,13 +135,18 @@ func (f *FSM) OnExit(cb StateCallback) {
 
 // --- 运行时 ---
 
-// Current 返回当前状态
+// Current 返回当前状态（并发安全）
 func (f *FSM) Current() string {
+	f.mu.RLock()
+	defer f.mu.RUnlock()
 	return f.current
 }
 
 // Tick 评估当前状态的所有转换条件，触发第一个匹配的转换
 func (f *FSM) Tick(bb *blackboard.Blackboard) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+
 	trans, ok := f.transitions[f.current]
 	if !ok {
 		return

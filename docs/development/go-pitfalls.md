@@ -10,11 +10,13 @@
 - **闭包捕获循环变量**：`for i, v := range` 的 `v` 在 goroutine 闭包中会捕获引用而非值（Go 1.22 前）。传参或重新赋值
 - **sync.WaitGroup Add 必须在 goroutine 外**：`wg.Add(1)` 必须在 `go func()` 之前调用，否则 `wg.Wait()` 可能提前返回
 - **channel 死锁**：无缓冲 channel 的发送和接收必须在不同 goroutine，否则死锁。关闭已关闭的 channel 会 panic
+- **channel 发送方必须考虑接收方生命周期**：如果接收方 goroutine 可能已退出（如 ctx 取消），发送方的阻塞写入会永久挂起。用 `select + default` 非阻塞发送或 `select + ctx.Done()` 保护
 
 ## 数据结构
 
 - **nil map 写入 panic**：`var m map[string]int; m["a"] = 1` 直接 panic。必须 `make(map[string]int)` 初始化
 - **nil slice 可以 append**：`var s []int; s = append(s, 1)` 是安全的，但直接 `s[0] = 1` 会 panic
+- **nil slice JSON 序列化为 null**：`var s []int` 序列化为 `null`，而 `s := make([]int, 0)` 序列化为 `[]`。面向客户端的 API 响应中，必须用 `make` 初始化确保序列化为空数组
 - **map 不是并发安全的**：多 goroutine 读写 map 会 fatal error（不是 panic，recover 不了）。用 `sync.RWMutex` 或 `sync.Map`
 - **slice 扩容后底层数组变化**：append 可能返回新的底层数组，之前持有的引用指向旧数据
 

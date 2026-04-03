@@ -79,7 +79,7 @@
 | R5 | MongoDB 连接失败时启动报错退出，错误信息明确 | 单元测试：错误连接串 → 返回错误 |
 | R6 | MongoDB 中配置缺失时启动报错退出，错误信息明确 | 单元测试：空 collection → 返回错误 |
 | R7 | 提供配置导入脚本，将 `configs/` 下的 JSON 文件导入 MongoDB | 手动验证：运行脚本 → MongoDB 中有数据 |
-| R8 | `.env.prod` 模板存在，包含生产环境变量（mongo_uri、log_level=info 等） | 文件审查 |
+| R8 | `.env.prod.example` 模板存在，包含生产环境变量（mongo_uri、log_level=info 等） | 文件审查 |
 
 ## 不做什么
 

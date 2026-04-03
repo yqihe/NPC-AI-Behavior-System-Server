@@ -36,11 +36,11 @@
 
 ---
 
-## [x] T3: main.go 配置源切换 + .env.prod (R2, R8)
+## [x] T3: main.go 配置源切换 + .env.prod.example (R2, R8)
 
 **文件**：
 - `cmd/server/main.go`
-- `.env.prod`
+- `.env.prod.example`
 
 **产出**：
 
@@ -49,7 +49,7 @@
 - `mongo_uri` 为空 → `config.NewJSONSource("configs")`（现有逻辑）
 - 日志标明配置源类型
 
-`.env.prod`：
+`.env.prod.example`：
 - `NPC_LOG_LEVEL=info`、`NPC_LOG_FORMAT=json`、`NPC_MONGO_URI=mongodb://mongo:27017/npc_ai`
 
 **做完了是什么样**：
@@ -85,7 +85,7 @@ T1 (MongoSource 实现)
  ↓
 T2 (集成测试)
  ↓
-T3 (main.go 切换 + .env.prod)
+T3 (main.go 切换 + .env.prod.example)
  ↓
 T4 (导入脚本)
 ```

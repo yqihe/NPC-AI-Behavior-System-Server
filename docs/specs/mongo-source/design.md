@@ -139,7 +139,7 @@ if cfg.MongoURI != "" {
 4. 遍历 `configs/bt_trees/**/*.json` → 插入 `bt_trees` collection（name 含子目录路径）
 5. 使用 upsert（name 作为唯一键），可重复执行
 
-### .env.prod 模板
+### .env.prod.example 模板
 
 ```env
 NPC_PORT=9820
@@ -239,7 +239,7 @@ MongoSource 在构造时写入所有 map，构造完成后所有方法只读 map
 ## 配置变更
 
 ### 新增文件
-- `.env.prod` — 生产环境变量模板
+- `.env.prod.example` — 生产环境变量模板
 
 ### 修改文件
 - `docker-compose.yml` — 无需修改（mongo 服务已存在）

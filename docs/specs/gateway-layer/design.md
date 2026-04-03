@@ -558,7 +558,7 @@ NPC_MONGO_URI=
 MONGO_PORT=27017
 ```
 
-**`.env.prod`**（生产环境，git 忽略）：
+**`.env.prod.example`**（生产环境模板，git 跟踪；实际使用时 `cp .env.prod.example .env.prod`）：
 
 ```env
 NPC_PORT=9820

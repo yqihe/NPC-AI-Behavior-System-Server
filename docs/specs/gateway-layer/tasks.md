@@ -151,7 +151,7 @@
 
 `.env`（开发环境默认值，git 跟踪）：
 - `NPC_PORT=9820`、`NPC_LOG_LEVEL=debug`、`NPC_LOG_FORMAT=text`、`NPC_MONGO_URI=`
-- `.env.prod` 由运维手动创建，git 忽略
+- `.env.prod.example` 模板 git 跟踪；实际使用时 `cp .env.prod.example .env.prod`
 
 **做完了是什么样**：
 - `docker compose up --build` 一键启动 server + mongo

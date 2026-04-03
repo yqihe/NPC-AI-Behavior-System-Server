@@ -65,9 +65,13 @@ func (h *Hub) Run(ctx context.Context) {
 	}
 }
 
-// Broadcast 向所有连接广播数据
+// Broadcast 向所有连接广播数据（非阻塞，channel 满时丢弃）
 func (h *Hub) Broadcast(data []byte) {
-	h.broadcast <- data
+	select {
+	case h.broadcast <- data:
+	default:
+		slog.Warn("hub.broadcast_full")
+	}
 }
 
 // Count 返回当前连接数

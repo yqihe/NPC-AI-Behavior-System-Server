@@ -72,7 +72,6 @@ func main() {
 	go hub.Run(ctx)
 	go broadcastLoop(ctx, hub, reg, tickRate)
 
-	slog.Info("server.start", "addr", cfg.Addr)
 	if err := srv.Start(ctx); err != nil {
 		slog.Error("server.fatal", "err", err)
 		os.Exit(1)
@@ -196,7 +195,7 @@ func broadcastLoop(ctx context.Context, hub *gateway.Hub, reg *npc.Registry, tic
 
 // buildSnapshot 构建当前世界状态快照
 func buildSnapshot(tick uint64, reg *npc.Registry) protocol.WorldSnapshot {
-	var npcs []protocol.NPCState
+	npcs := make([]protocol.NPCState, 0) // 保证 JSON 序列化为 [] 而非 null
 
 	reg.ForEach(func(inst *npc.Instance) {
 		currentAction, _ := blackboard.Get(inst.BB, blackboard.KeyCurrentAction)

@@ -23,3 +23,9 @@ var KeyFSMState = NewKey[string]("fsm_state") // 当前 FSM 状态名，FSM 引�
 var KeyNPCType = NewKey[string]("npc_type")    // NPC 类型名，创建时写入
 var KeyNPCPosX = NewKey[float64]("npc_pos_x")  // NPC 位置 X，Runtime 每 Tick 更新
 var KeyNPCPosZ = NewKey[float64]("npc_pos_z")  // NPC 位置 Z，Runtime 每 Tick 更新
+
+// --- 行为追踪 ---
+
+var KeyCurrentAction   = NewKey[string]("current_action")    // BT 当前执行的子行为名
+var KeyAlertStartTick  = NewKey[int64]("alert_start_tick")   // 进入 Alarmed 状态的时间戳
+var KeyExitCleanupDone = NewKey[string]("exit_cleanup_done") // FSM OnExit 清理完成标记

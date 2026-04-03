@@ -33,6 +33,7 @@
 
 ## 性能
 
+- **json.Unmarshal 到 any 丢失 int/float 区分**：Go 的 `json.Unmarshal` 把所有 JSON 数字解析为 `float64`。存入 MongoDB 后 `priority: 10` 变成 BSON double `10.0`，再转回 JSON 时无法反序列化为 Go 的 `int` 字段。解决：用 `bson.UnmarshalExtJSON` 直接从 JSON 转 BSON Raw
 - **string 和 []byte 转换有拷贝**：频繁转换时考虑 `unsafe` 或 `strings.Builder`
 - **fmt.Sprintf 在热路径上很慢**：Tick 循环内避免用 Sprintf 拼日志 key，用预定义常量
 - **time.After 在循环里会泄漏**：每次调用创建一个 timer 不会被回收直到触发。用 `time.NewTimer` + `Reset`

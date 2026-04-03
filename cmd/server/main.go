@@ -44,7 +44,19 @@ func main() {
 	)
 
 	// 2. 初始化配置源
-	src := config.NewJSONSource("configs")
+	var src config.Source
+	if cfg.MongoURI != "" {
+		mongoSrc, err := config.NewMongoSource(context.Background(), cfg.MongoURI, "npc_ai")
+		if err != nil {
+			slog.Error("config.mongo_error", "err", err)
+			os.Exit(1)
+		}
+		src = mongoSrc
+		slog.Info("config.source", "type", "mongodb")
+	} else {
+		src = config.NewJSONSource("configs")
+		slog.Info("config.source", "type", "json", "dir", "configs")
+	}
 
 	// 3. 加载事件类型配置
 	evtTypes := loadAllEventTypes(src)

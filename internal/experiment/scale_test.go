@@ -3,6 +3,7 @@
 package experiment_test
 
 import (
+	"runtime"
 	"testing"
 	"time"
 
@@ -15,6 +16,9 @@ import (
 
 var behaviorCounts = []int{10, 50, 100, 150, 200}
 
+// 迭代次数：50 万次，保证总耗时 >> 计时精度
+const scaleIterations = 500_000
+
 func makeTestEvents() ([]*event.Event, map[string]*event.EventTypeConfig) {
 	evtType := &event.EventTypeConfig{Name: "test_explosion", DefaultSeverity: 80, DefaultTTL: 15, PerceptionMode: "auditory", Range: 500}
 	evtTypes := map[string]*event.EventTypeConfig{"test_explosion": evtType}
@@ -24,12 +28,33 @@ func makeTestEvents() ([]*event.Event, map[string]*event.EventTypeConfig) {
 	return events, evtTypes
 }
 
+// stableNsPerOp 稳定测量：强制 GC + 锁 OS 线程 + 大量迭代
+func stableNsPerOp(npc experiment.ExperimentNPC, events []*event.Event, evtTypes map[string]*event.EventTypeConfig, iterations int) int64 {
+	// 预热 1000 次
+	for i := 0; i < 1000; i++ {
+		blackboard.Set(npc.BB(), blackboard.KeyCurrentTime, int64(i)*100)
+		npc.Tick(events, evtTypes, 0.1)
+	}
+
+	// 强制 GC，避免测量期间触发
+	runtime.GC()
+	runtime.LockOSThread()
+	defer runtime.UnlockOSThread()
+
+	start := time.Now()
+	for i := 0; i < iterations; i++ {
+		blackboard.Set(npc.BB(), blackboard.KeyCurrentTime, int64(10000+i)*100)
+		npc.Tick(events, evtTypes, 0.1)
+	}
+	total := time.Since(start).Nanoseconds()
+	return total / int64(iterations)
+}
+
 // --- 图 1：行为数量 vs 单 Tick 耗时 ---
 
 func TestScale_TickLatency(t *testing.T) {
 	btReg := bt.DefaultRegistry()
 	events, evtTypes := makeTestEvents()
-	const iterations = 10000
 
 	t.Log("\n=== 图 1: 行为数量 vs 单 Tick 耗时 (ns) ===")
 	t.Log("| Behaviors | Hybrid     | PureFSM    | PureBT     |")
@@ -51,26 +76,17 @@ func TestScale_TickLatency(t *testing.T) {
 			t.Fatalf("purebt scale %d: %v", n, err)
 		}
 
-		hNs := measureTickLatency(hybrid, events, evtTypes, iterations)
-		fNs := measureTickLatency(pureFSM, events, evtTypes, iterations)
-		bNs := measureTickLatency(pureBT, events, evtTypes, iterations)
+		hNs := stableNsPerOp(hybrid, events, evtTypes, scaleIterations)
+		fNs := stableNsPerOp(pureFSM, events, evtTypes, scaleIterations)
+		bNs := stableNsPerOp(pureBT, events, evtTypes, scaleIterations)
 
 		t.Logf("| %9d | %10d | %10d | %10d |", n, hNs, fNs, bNs)
-	}
-}
 
-func measureTickLatency(npc experiment.ExperimentNPC, events []*event.Event, evtTypes map[string]*event.EventTypeConfig, iterations int) int64 {
-	// 预热
-	for i := 0; i < 10; i++ {
-		blackboard.Set(npc.BB(), blackboard.KeyCurrentTime, int64(i)*100)
-		npc.Tick(events, evtTypes, 0.1)
+		// 数据质量检查：不允许 0
+		if hNs == 0 || fNs == 0 || bNs == 0 {
+			t.Errorf("zero value detected at %d behaviors: h=%d f=%d b=%d", n, hNs, fNs, bNs)
+		}
 	}
-	start := time.Now()
-	for i := 0; i < iterations; i++ {
-		blackboard.Set(npc.BB(), blackboard.KeyCurrentTime, int64(1000+i)*100)
-		npc.Tick(events, evtTypes, 0.1)
-	}
-	return time.Since(start).Nanoseconds() / int64(iterations)
 }
 
 // --- 图 3：行为数量 vs 配置复杂度 ---
@@ -110,7 +126,6 @@ func TestScale_MarginalCost(t *testing.T) {
 
 func TestScale_EventResponseTime(t *testing.T) {
 	btReg := bt.DefaultRegistry()
-	const iterations = 10000
 
 	t.Log("\n=== 图 6: 行为数量 vs 单事件响应墙钟时间 (ns) ===")
 	t.Log("| Behaviors | Hybrid     | PureFSM    | PureBT     |")
@@ -119,24 +134,22 @@ func TestScale_EventResponseTime(t *testing.T) {
 	for _, n := range behaviorCounts {
 		cfg := experiment.GenerateScaleConfig(n)
 
-		hNs := measureEventResponse("h", cfg, btReg, "hybrid", iterations)
-		fNs := measureEventResponse("f", cfg, btReg, "purefsm", iterations)
-		bNs := measureEventResponse("b", cfg, btReg, "purebt", iterations)
+		hNs := measureEventResponse("h", cfg, btReg, "hybrid")
+		fNs := measureEventResponse("f", cfg, btReg, "purefsm")
+		bNs := measureEventResponse("b", cfg, btReg, "purebt")
 
 		t.Logf("| %9d | %10d | %10d | %10d |", n, hNs, fNs, bNs)
 
-		// R12: 不允许全零
 		if hNs == 0 && fNs == 0 && bNs == 0 {
-			t.Errorf("[R12] All response times are 0 at %d behaviors — metric broken", n)
+			t.Errorf("[R12] All response times are 0 at %d behaviors", n)
 		}
 	}
 }
 
-func measureEventResponse(id string, cfg *experiment.ScaleConfig, btReg *bt.Registry, mode string, iterations int) int64 {
+func measureEventResponse(id string, cfg *experiment.ScaleConfig, btReg *bt.Registry, mode string) int64 {
 	evtType := &event.EventTypeConfig{Name: "test", DefaultSeverity: 80, DefaultTTL: 15, PerceptionMode: "auditory", Range: 500}
 	evtTypes := map[string]*event.EventTypeConfig{"test": evtType}
 
-	// 创建一个 NPC，跑 iterations 次 Tick，累积总时间再除
 	var npc experiment.ExperimentNPC
 	var err error
 	switch mode {
@@ -154,17 +167,5 @@ func measureEventResponse(id string, cfg *experiment.ScaleConfig, btReg *bt.Regi
 	evt := event.NewEvent(evtType, event.Vec3{X: 50}, "src", 80)
 	events := []*event.Event{evt}
 
-	// 预热
-	for i := 0; i < 100; i++ {
-		blackboard.Set(npc.BB(), blackboard.KeyCurrentTime, int64(i)*100)
-		npc.Tick(events, evtTypes, 0.1)
-	}
-
-	// 累积测量
-	start := time.Now()
-	for i := 0; i < iterations; i++ {
-		blackboard.Set(npc.BB(), blackboard.KeyCurrentTime, int64(1000+i)*100)
-		npc.Tick(events, evtTypes, 0.1)
-	}
-	return time.Since(start).Nanoseconds() / int64(iterations)
+	return stableNsPerOp(npc, events, evtTypes, scaleIterations)
 }

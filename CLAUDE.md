@@ -19,8 +19,10 @@
 **客户端**：Unity C#（WebSocket 通信 + GM 面板 + AutoTestRunner）
 
 **服务端**（Golang）：
-- 数据库：MongoDB（配置存储+生产环境）+ Redis（热状态缓存）
+- 数据库：MongoDB（配置存储+生产环境）
 - 通信协议：WebSocket，JSON 序列化
+- 日志：Go 标准库 `log/slog`，结构化输出到 stdout
+- 容器化：Docker Compose（server + MongoDB）
 - 配置格式：开发阶段 JSON 文件（git 可追踪），生产环境 MongoDB（支持热更新），Loader 层抽象数据源
 - 测试框架：Go 标准 testing + e2e 测试（走 WS 协议，模拟无头客户端）
 - e2e 测试走 WebSocket 协议与服务端交互，和 Unity 客户端走同一入口，未来 Unity 接入后可直接替换
@@ -58,7 +60,7 @@ go build -tags experiment ./cmd/server/
 ### 目录结构
 
 ```
-cmd/server/              # 程序入口
+cmd/server/              # 程序入口（main.go）
 internal/
   config/                # 配置加载（JSON/MongoDB 双数据源抽象）
   core/                  # 纯引擎，无业务逻辑
@@ -71,13 +73,14 @@ internal/
     event/               #   事件总线（TTL 衰减模型）
     decision/            #   决策中心（威胁评估+优先级仲裁）
     perception/          #   感知过滤（配置驱动）
-    world/               #   世界状态、空间索引、AOI
   gateway/               # WebSocket 连接、消息路由、状态广播
-  admin/                 # 管理接口
   experiment/            # 对照实验（build tag 隔离）
 pkg/protocol/            # WS 消息协议（客户端可引用）
-configs/                 # JSON 配置文件
+configs/                 # JSON 配置文件（server.json + NPC/FSM/BT/事件配置）
 test/e2e/                # e2e 测试（WS 协议无头客户端）
+Dockerfile               # 多阶段构建
+docker-compose.yml       # 服务编排（server + MongoDB）
+.env                     # 开发环境变量
 ```
 
 ### 命名约定
@@ -96,17 +99,18 @@ test/e2e/                # e2e 测试（WS 协议无头客户端）
 
 ## 环境配置
 
-### 开发环境
-- **数据库**：MongoDB localhost:27017
-- **缓存**：Redis localhost:6379
-- **配置源**：`configs/` 目录 JSON 文件
-- **日志级别**：DEBUG
+### 开发环境（Docker Compose）
+- **启动**：`docker compose up --build`
+- **数据库**：MongoDB 容器（映射 localhost:27017）
+- **配置源**：`configs/` 目录 JSON 文件（挂载到容器内）
+- **日志**：slog Text 格式，DEBUG 级别
+- **WS 端口**：9820
 
 ### 生产环境
-- **数据库**：MongoDB（配置连接串）
-- **缓存**：Redis（配置连接串）
-- **监控**：
-- **日志级别**：INFO
+- **启动**：`docker compose --env-file .env.prod up --build -d`
+- **数据库**：MongoDB（环境变量注入连接串）
+- **配置源**：MongoDB（`NPC_MONGO_URI` 非空时）
+- **日志**：slog JSON 格式，INFO 级别
 
 ## Git 工作流
 

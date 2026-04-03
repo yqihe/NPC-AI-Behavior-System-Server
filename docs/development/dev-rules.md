@@ -75,7 +75,7 @@ log.Debug("bt.tick", "npc_id", npc.ID, "node", node.Name(), "result", result)
 
 ## Docker 构建与运行
 
-服务部署和启动通过 Docker Compose 编排，保证 Go 服务端 + MongoDB + Redis 环境一致。
+服务部署和启动通过 Docker Compose 编排，保证 Go 服务端 + MongoDB 环境一致。
 
 ### 服务编排
 
@@ -83,9 +83,8 @@ log.Debug("bt.tick", "npc_id", npc.ID, "node", node.Name(), "result", result)
 
 | 服务 | 镜像 | 说明 |
 |------|------|------|
-| `server` | 本地构建（多阶段 Dockerfile） | Go 服务端 |
+| `server` | 本地构建（多阶段 Dockerfile） | Go 服务端（端口 9820） |
 | `mongo` | `mongo:7` | 配置存储 + 数据 |
-| `redis` | `redis:7-alpine` | 热状态缓存 |
 
 ### 日常命令
 

@@ -5,9 +5,18 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/fsm"
 )
+
+// safePath 校验路径组件不包含目录穿越
+func safePath(name string) error {
+	if strings.Contains(name, "..") {
+		return fmt.Errorf("config: path traversal rejected: %q", name)
+	}
+	return nil
+}
 
 // JSONSource 从 configs/ 目录加载 JSON 配置文件
 type JSONSource struct {
@@ -21,6 +30,9 @@ func NewJSONSource(basePath string) *JSONSource {
 
 // LoadFSMConfig 加载 FSM 配置：configs/fsm/<npcType>.json
 func (s *JSONSource) LoadFSMConfig(npcType string) (*fsm.FSMConfig, error) {
+	if err := safePath(npcType); err != nil {
+		return nil, err
+	}
 	path := filepath.Join(s.basePath, "fsm", npcType+".json")
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -37,6 +49,9 @@ func (s *JSONSource) LoadFSMConfig(npcType string) (*fsm.FSMConfig, error) {
 
 // LoadBTTree 加载 BT 树配置：configs/bt_trees/<treeName>.json
 func (s *JSONSource) LoadBTTree(treeName string) ([]byte, error) {
+	if err := safePath(treeName); err != nil {
+		return nil, err
+	}
 	path := filepath.Join(s.basePath, "bt_trees", treeName+".json")
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -53,6 +68,9 @@ func (s *JSONSource) LoadBTTree(treeName string) ([]byte, error) {
 
 // LoadEventConfig 加载事件类型配置：configs/events/<eventType>.json
 func (s *JSONSource) LoadEventConfig(eventType string) ([]byte, error) {
+	if err := safePath(eventType); err != nil {
+		return nil, err
+	}
 	path := filepath.Join(s.basePath, "events", eventType+".json")
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -89,6 +107,9 @@ func (s *JSONSource) LoadAllEventConfigs() (map[string][]byte, error) {
 
 // LoadNPCTypeConfig 加载 NPC 类型配置：configs/npc_types/<npcType>.json
 func (s *JSONSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {
+	if err := safePath(npcType); err != nil {
+		return nil, err
+	}
 	path := filepath.Join(s.basePath, "npc_types", npcType+".json")
 	data, err := os.ReadFile(path)
 	if err != nil {

@@ -352,26 +352,16 @@ func (c *checkFloat) Tick(ctx *bt.Context) bt.Status {
 }
 
 func TestAttack_BT_SetRawUnregisteredKey(t *testing.T) {
-	// set_bb_value 对未注册 Key 应该 panic（R3 保证）
-	bb := blackboard.New()
-	ctx := &bt.Context{BB: bb}
-
+	// set_bb_value 对未注册 Key 应在构建期拒绝（R3 保证）
 	treeJSON := `{
 		"type": "set_bb_value",
 		"params": {"key": "totally_unregistered_key_abc", "value": 42}
 	}`
 	reg := bt.DefaultRegistry()
-	node, err := bt.BuildFromJSON([]byte(treeJSON), reg)
-	if err != nil {
-		t.Fatal(err)
+	_, err := bt.BuildFromJSON([]byte(treeJSON), reg)
+	if err == nil {
+		t.Fatal("expected build error for unregistered key in set_bb_value")
 	}
-
-	defer func() {
-		if r := recover(); r == nil {
-			t.Error("expected panic for unregistered key in set_bb_value")
-		}
-	}()
-	node.Tick(ctx)
 }
 
 // --- Config 攻击 ---

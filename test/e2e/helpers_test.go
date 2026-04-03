@@ -124,7 +124,7 @@ func broadcastLoop(ctx context.Context, hub *gateway.Hub, reg *npc.Registry, tic
 }
 
 func buildSnapshot(tick uint64, reg *npc.Registry) protocol.WorldSnapshot {
-	var npcs []protocol.NPCState
+	npcs := make([]protocol.NPCState, 0)
 	reg.ForEach(func(inst *npc.Instance) {
 		currentAction, _ := blackboard.Get(inst.BB, blackboard.KeyCurrentAction)
 		threatLevel, _ := blackboard.Get(inst.BB, blackboard.KeyThreatLevel)

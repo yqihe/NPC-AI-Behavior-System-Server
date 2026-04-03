@@ -3,6 +3,8 @@ package bt
 import (
 	"encoding/json"
 	"fmt"
+
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 )
 
 // --- check_bb_float ---
@@ -103,6 +105,9 @@ func setBBValueFactory(params json.RawMessage) (Node, error) {
 	}
 	if cfg.Key == "" {
 		return nil, fmt.Errorf("set_bb_value: key is required")
+	}
+	if !blackboard.IsRegistered(cfg.Key) {
+		return nil, fmt.Errorf("set_bb_value: key %q is not registered in blackboard", cfg.Key)
 	}
 	return &setBBValue{key: cfg.Key, value: cfg.Value}, nil
 }

@@ -95,6 +95,11 @@ func (c *Condition) Validate() error {
 		return nil
 	}
 
+	// 禁止同时有 leaf（key）和 composite（and/or）字段
+	if c.isLeaf() && (len(c.And) > 0 || len(c.Or) > 0) {
+		return fmt.Errorf("condition cannot have both key %q and and/or composite fields", c.Key)
+	}
+
 	if len(c.And) > 0 {
 		for i := range c.And {
 			if err := c.And[i].Validate(); err != nil {

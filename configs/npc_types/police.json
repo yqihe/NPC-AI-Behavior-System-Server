@@ -1,0 +1,13 @@
+{
+    "type_name": "police",
+    "fsm_ref": "police",
+    "bt_refs": {
+        "Idle": "police/idle",
+        "Alarmed": "police/alarmed",
+        "Engage": "police/engage"
+    },
+    "perception": {
+        "visual_range": 300.0,
+        "auditory_range": 800.0
+    }
+}

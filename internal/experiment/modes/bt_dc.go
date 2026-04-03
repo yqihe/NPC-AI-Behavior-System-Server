@@ -25,7 +25,7 @@ func NewBTDCNPC(id string, pos event.Vec3, src config.Source, btReg *bt.Registry
 	bb := blackboard.New()
 	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(0))
 	blackboard.Set(bb, blackboard.KeyFSMState, "Idle")
-	treeData, err := src.LoadBTTree("civilian_pure_bt")
+	treeData, err := src.LoadBTTree("civilian/pure_bt")
 	if err != nil {
 		return nil, err
 	}

@@ -1,0 +1,7 @@
+{
+    "name": "fire",
+    "default_severity": 60,
+    "default_ttl": 20.0,
+    "perception_mode": "visual",
+    "range": 150.0
+}

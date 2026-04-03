@@ -1,0 +1,11 @@
+{
+    "type": "sequence",
+    "children": [
+        {"type": "set_bb_value", "params": {"key": "current_action", "value": "draw_weapon"}},
+        {"type": "stub_action", "params": {"name": "equip_weapon", "result": "success"}},
+        {"type": "set_bb_value", "params": {"key": "current_action", "value": "move_to_threat"}},
+        {"type": "stub_action", "params": {"name": "approach_target", "result": "success"}},
+        {"type": "set_bb_value", "params": {"key": "current_action", "value": "engage_target"}},
+        {"type": "stub_action", "params": {"name": "engage", "result": "success"}}
+    ]
+}

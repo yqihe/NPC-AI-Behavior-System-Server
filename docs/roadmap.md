@@ -31,9 +31,9 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
   - 服务端开发：通过表单化编辑器添加高级配置（有模板、校验、自动补全，不手写裸 JSON）
 - **与游戏服务端的关系**：
   - 运营平台随时写 MongoDB，不影响正在运行的游戏
-  - 游戏服务端启动时通过 ADMIN HTTP API（`NPC_ADMIN_API`）全量拉取配置到内存
+  - 游戏服务端启动时全量拉取配置到内存，配置源优先级：`NPC_ADMIN_API`（ADMIN HTTP API）> `NPC_MONGO_URI`（MongoDB 直连）> JSON 文件
+  - 推荐通过 ADMIN API 解耦，MongoDB 直连作为备选
   - 更新流程：运营改配置 → 发停服公告 → 到点停服 → 重启服务 → 新配置生效
-  - 游戏服务端不直接连 MongoDB，通过 ADMIN API 解耦
 - **Redis 使用**：运营平台独立服务，Redis 缓存 MongoDB 查询（多用户频繁读取配置列表），与游戏服务端无关
 
 ### 3. 扩展轴步骤 5：NPC 间交互
@@ -65,8 +65,9 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
 
 ### 6. 更多 NPC 类型和事件
 
-- 补充 NPC 类型：商人（Merchant）、医生（Doctor）、守卫（Guard）
-- 补充事件类型：robbery（抢劫）、medical_emergency（医疗紧急）、alarm（警报）
+- 已完成：守卫（Guard，含 patrol/alert/defend 行为树）、平民瑟缩（Cower 状态）、earthquake 事件——通过 ADMIN 联调添加，零代码改动
+- 待补充 NPC 类型：商人（Merchant）、医生（Doctor）
+- 待补充事件类型：robbery（抢劫）、medical_emergency（医疗紧急）、alarm（警报）
 - 通过运营平台添加，验证"策划加配置不改代码"的完整流程
 
 ### 7. BT 节点丰富化

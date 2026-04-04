@@ -16,7 +16,8 @@
 | `NPC_ADDR` | WS 监听地址 | `:9820` | `:9820` |
 | `NPC_LOG_LEVEL` | 日志级别 | `debug` | `info` |
 | `NPC_LOG_FORMAT` | 日志格式 | `text` | `json` |
-| `NPC_MONGO_URI` | MongoDB 连接串，空则用 JSON 文件 | 空 | `mongodb://mongo:27017/npc_ai` |
+| `NPC_ADMIN_API` | ADMIN 平台 API 地址，非空时从 ADMIN 拉取配置 | 空 | `http://admin:3000` |
+| `NPC_MONGO_URI` | MongoDB 连接串，`NPC_ADMIN_API` 为空时生效 | 空 | `mongodb://mongo:27017/npc_ai` |
 | `NPC_PORT` | 宿主机映射端口 | `9820` | `9820` |
 | `MONGO_PORT` | MongoDB 宿主机映射端口 | `27017` | `27017` |
 
@@ -56,9 +57,11 @@ docker compose logs -f server
 docker compose down
 ```
 
-### 配置源切换逻辑
+### 配置源切换逻辑（三级优先级）
 
-`NPC_MONGO_URI` 为空（默认）→ 使用 `JSONSource`，从 `configs/` 目录读取 JSON 文件。
+1. `NPC_ADMIN_API` 非空 → 使用 `HTTPSource`，启动时从 ADMIN 平台 HTTP API 全量拉取配置到内存
+2. `NPC_MONGO_URI` 非空 → 使用 `MongoSource`，启动时从 MongoDB 全量加载配置到内存
+3. 两者均为空（默认）→ 使用 `JSONSource`，从 `configs/` 目录读取 JSON 文件
 
 ### 本地测试
 
@@ -76,6 +79,28 @@ go test ./test/e2e/... -v
 docker compose up -d mongo
 go test ./internal/config/ -v -run TestMongo
 ```
+
+## 联调环境（与 ADMIN 平台）
+
+### 启动
+
+```bash
+# ADMIN 平台已启动（如 http://localhost:3000），设置环境变量指向 ADMIN
+NPC_ADMIN_API=http://host.docker.internal:3000 docker compose up --build
+```
+
+### 工作流
+
+1. 运营人员在 ADMIN 页面创建/修改配置（NPC 类型、事件、FSM、BT）
+2. 游戏服务端重启：`docker compose up --build`
+3. 启动日志输出 `config.source type=http`，确认从 ADMIN 拉取
+4. 通过 WS 验证新配置生效
+
+### 注意
+
+- 游戏服务端不直接连 MongoDB，所有配置通过 ADMIN API 获取
+- ADMIN 必须在游戏服务端启动前可达，否则启动失败
+- 配置只在启动时拉取一次，运行时不轮询
 
 ## prod 环境
 
@@ -127,7 +152,7 @@ docker compose --env-file .env.prod up --build -d
 
 切换到 prod 前确认：
 
-- [ ] `.env.prod` 中 `NPC_MONGO_URI` 已配置
+- [ ] `.env.prod` 中 `NPC_ADMIN_API` 或 `NPC_MONGO_URI` 已配置（二选一）
 - [ ] `.env.prod` 中 `NPC_LOG_LEVEL=info`、`NPC_LOG_FORMAT=json`
 - [ ] MongoDB 已启动且可连接
 - [ ] 配置已导入 MongoDB（`scripts/import_configs.go`）

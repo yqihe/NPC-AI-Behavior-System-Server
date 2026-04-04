@@ -27,6 +27,7 @@ type serverConfig struct {
 	LogLevel         string  `json:"log_level"`
 	LogFormat        string  `json:"log_format"`
 	MongoURI         string  `json:"mongo_uri"`
+	AdminAPI         string  `json:"admin_api"`
 }
 
 func main() {
@@ -43,9 +44,17 @@ func main() {
 		"log_format", cfg.LogFormat,
 	)
 
-	// 2. 初始化配置源
+	// 2. 初始化配置源（优先级：AdminAPI > MongoURI > JSONSource）
 	var src config.Source
-	if cfg.MongoURI != "" {
+	if cfg.AdminAPI != "" {
+		httpSrc, err := config.NewHTTPSource(context.Background(), cfg.AdminAPI)
+		if err != nil {
+			slog.Error("config.http_error", "err", err)
+			os.Exit(1)
+		}
+		src = httpSrc
+		slog.Info("config.source", "type", "http", "base_url", cfg.AdminAPI)
+	} else if cfg.MongoURI != "" {
 		mongoSrc, err := config.NewMongoSource(context.Background(), cfg.MongoURI, "npc_ai")
 		if err != nil {
 			slog.Error("config.mongo_error", "err", err)
@@ -125,6 +134,9 @@ func applyEnvOverrides(cfg *serverConfig) {
 	}
 	if v := os.Getenv("NPC_MONGO_URI"); v != "" {
 		cfg.MongoURI = v
+	}
+	if v := os.Getenv("NPC_ADMIN_API"); v != "" {
+		cfg.AdminAPI = v
 	}
 }
 

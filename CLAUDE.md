@@ -23,7 +23,7 @@
 - 通信协议：WebSocket，JSON 序列化
 - 日志：Go 标准库 `log/slog`，结构化输出到 stdout
 - 容器化：Docker Compose（server + MongoDB）
-- 配置格式：开发阶段 JSON 文件（git 可追踪），生产环境 MongoDB（支持热更新），Loader 层抽象数据源
+- 配置格式：开发阶段 JSON 文件（git 可追踪），联调/生产环境通过 ADMIN HTTP API 拉取（`NPC_ADMIN_API`），备选 MongoDB 直连（`NPC_MONGO_URI`），Loader 层抽象数据源
 - 测试框架：Go 标准 testing + e2e 测试（走 WS 协议，模拟无头客户端）
 - e2e 测试走 WebSocket 协议与服务端交互，和 Unity 客户端走同一入口，未来 Unity 接入后可直接替换
 
@@ -62,7 +62,7 @@ go build -tags experiment ./cmd/server/
 ```
 cmd/server/              # 程序入口（main.go）
 internal/
-  config/                # 配置加载（JSON/MongoDB 双数据源抽象）
+  config/                # 配置加载（JSON/MongoDB/HTTP 三数据源抽象）
   core/                  # 纯引擎，无业务逻辑
     blackboard/          #   强类型 Blackboard + keys.go
     fsm/                 #   FSM 引擎（配置驱动）
@@ -106,10 +106,15 @@ docker-compose.yml       # 服务编排（server + MongoDB）
 - **日志**：slog Text 格式，DEBUG 级别
 - **WS 端口**：9820
 
+### 联调环境（与 ADMIN 平台）
+- **启动**：`NPC_ADMIN_API=http://host.docker.internal:3000 docker compose up --build`
+- **配置源**：ADMIN HTTP API（`NPC_ADMIN_API` 非空时，优先级最高）
+- **日志**：slog Text 格式，DEBUG 级别
+
 ### 生产环境
 - **启动**：`docker compose --env-file .env.prod up --build -d`
-- **数据库**：MongoDB（环境变量注入连接串）
-- **配置源**：MongoDB（`NPC_MONGO_URI` 非空时）
+- **配置源**：ADMIN HTTP API（推荐）或 MongoDB 直连（备选）
+- **配置源优先级**：`NPC_ADMIN_API` > `NPC_MONGO_URI` > JSON 文件
 - **日志**：slog JSON 格式，INFO 级别
 
 ## Git 工作流

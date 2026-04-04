@@ -113,11 +113,17 @@ func broadcastLoop(ctx context.Context, hub *gateway.Hub, reg *npc.Registry, tic
 				continue
 			}
 			snapshot := buildSnapshot(tickCount, reg)
-			snapshotJSON, _ := json.Marshal(snapshot)
-			msg, _ := json.Marshal(protocol.Message{
+			snapshotJSON, err := json.Marshal(snapshot)
+			if err != nil {
+				continue
+			}
+			msg, err := json.Marshal(protocol.Message{
 				Type: protocol.TypeWorldSnapshot,
 				Data: json.RawMessage(snapshotJSON),
 			})
+			if err != nil {
+				continue
+			}
 			hub.Broadcast(msg)
 		}
 	}

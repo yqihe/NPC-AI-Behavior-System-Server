@@ -46,7 +46,7 @@
 ### Step 3：修复
 
 - **一次只改一个点**——不准同时改多个可疑位置
-- 改完后检查 `docs/development/go-pitfalls.md`，确认修复没有引入新问题
+- 改完后检查 `docs/standards/go-pitfalls.md`，确认修复没有引入新问题
 
 ### Step 4：验证修复
 
@@ -89,4 +89,4 @@
 
 ## 经验沉淀
 
-排查过程中发现的新坑追加到 `docs/development/go-pitfalls.md`。发现的架构缺陷追加到 `docs/architecture/red-lines.md`。
+排查过程中发现的新坑追加到 `docs/standards/go-pitfalls.md`。发现的架构缺陷追加到 `docs/architecture/red-lines.md`。

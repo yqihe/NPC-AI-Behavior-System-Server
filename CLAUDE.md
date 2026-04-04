@@ -23,9 +23,8 @@
 - 通信协议：WebSocket，JSON 序列化
 - 日志：Go 标准库 `log/slog`，结构化输出到 stdout
 - 容器化：Docker Compose（server + MongoDB）
-- 配置格式：开发阶段 JSON 文件（git 可追踪），生产环境 MongoDB（支持热更新），Loader 层抽象数据源
+- 配置格式：开发阶段 JSON 文件（git 可追踪），联调/生产环境通过 ADMIN HTTP API 拉取（`NPC_ADMIN_API`），备选 MongoDB 直连（`NPC_MONGO_URI`），Loader 层抽象数据源
 - 测试框架：Go 标准 testing + e2e 测试（走 WS 协议，模拟无头客户端）
-- e2e 测试走 WebSocket 协议与服务端交互，和 Unity 客户端走同一入口，未来 Unity 接入后可直接替换
 
 ## 开发指令
 
@@ -53,37 +52,41 @@ go build ./cmd/server/
 
 # 本地编译（含实验框架）
 go build -tags experiment ./cmd/server/
+
+# 从 ADMIN 平台同步配置到本地
+go run ./cmd/sync -api http://localhost:3000
 ```
 
-## 架构和约束
-
-### 目录结构
+## 目录结构
 
 ```
-cmd/server/              # 程序入口（main.go）
+cmd/
+  server/                    # 程序入口（main.go）
+  sync/                      # 配置同步工具（ADMIN API → configs/）
 internal/
-  config/                # 配置加载（JSON/MongoDB 双数据源抽象）
-  core/                  # 纯引擎，无业务逻辑
-    blackboard/          #   强类型 Blackboard + keys.go
-    fsm/                 #   FSM 引擎（配置驱动）
-    bt/                  #   BT 引擎 + 节点库
-    rule/                #   条件规则匹配器
-  runtime/               # 运行时业务组装
-    npc/                 #   NPC 实例管理、注册表、Tick 调度
-    event/               #   事件总线（TTL 衰减模型）
-    decision/            #   决策中心（威胁评估+优先级仲裁）
-    perception/          #   感知过滤（配置驱动）
-  gateway/               # WebSocket 连接、消息路由、状态广播
-  experiment/            # 对照实验（build tag 隔离）
-pkg/protocol/            # WS 消息协议（客户端可引用）
-configs/                 # JSON 配置文件（server.json + NPC/FSM/BT/事件配置）
-test/e2e/                # e2e 测试（WS 协议无头客户端）
-Dockerfile               # 多阶段构建
-docker-compose.yml       # 服务编排（server + MongoDB）
-.env                     # 开发环境变量
+  config/                    # 配置加载（JSON/MongoDB/HTTP 三数据源抽象）
+  core/                      # 纯引擎，无业务逻辑
+    blackboard/              #   强类型 Blackboard + keys.go
+    fsm/                     #   FSM 引擎（配置驱动）
+    bt/                      #   BT 引擎 + 节点库
+    rule/                    #   条件规则匹配器
+  runtime/                   # 运行时业务组装
+    npc/                     #   NPC 实例管理、注册表、Tick 调度
+    event/                   #   事件总线（TTL 衰减模型）
+    decision/                #   决策中心（威胁评估+优先级仲裁）
+    perception/              #   感知过滤（配置驱动）
+  gateway/                   # WebSocket 连接、消息路由、状态广播
+  experiment/                # 对照实验（build tag 隔离）
+pkg/protocol/                # WS 消息协议（客户端可引用）
+configs/                     # JSON 配置文件（server.json + NPC/FSM/BT/事件配置）
+test/e2e/                    # e2e 测试（WS 协议无头客户端）
+docs/
+  standards/                 # 通用标准（可跨项目复用）
+  architecture/              # 项目架构文档
+  development/               # 项目开发规范
 ```
 
-### 命名约定
+## 命名约定
 
 - 文件名：`snake_case.go`
 - 包名：小写单词，不用下划线
@@ -91,26 +94,12 @@ docker-compose.yml       # 服务编排（server + MongoDB）
 - 配置文件：`snake_case.json`
 - Blackboard Key 常量：`Key` 前缀 + PascalCase（`KeyThreatLevel`）
 
-### 代码风格
+## 架构约束
 
 - 类型安全严格模式，Blackboard 禁止裸 `map[string]any`，必须通过泛型 `BBKey[T]` 访问
 - 禁止 switch-case 做 NPC 类型分发，使用注册表/工厂模式
 - core/ 包禁止 import runtime/ 或 gateway/，依赖方向单向向下
-
-## 环境配置
-
-### 开发环境（Docker Compose）
-- **启动**：`docker compose up --build`
-- **数据库**：MongoDB 容器（映射 localhost:27017）
-- **配置源**：`configs/` 目录 JSON 文件（挂载到容器内）
-- **日志**：slog Text 格式，DEBUG 级别
-- **WS 端口**：9820
-
-### 生产环境
-- **启动**：`docker compose --env-file .env.prod up --build -d`
-- **数据库**：MongoDB（环境变量注入连接串）
-- **配置源**：MongoDB（`NPC_MONGO_URI` 非空时）
-- **日志**：slog JSON 格式，INFO 级别
+- 配置源优先级：`NPC_ADMIN_API` > `NPC_MONGO_URI` > JSON 文件
 
 ## Git 工作流
 
@@ -118,7 +107,7 @@ docker-compose.yml       # 服务编排（server + MongoDB）
 - **开发分支**：`develop`（日常开发）
 - **功能分支**：`feature/task-id-description`
 - **修复分支**：`hotfix/critical-bug-description`
-- 自动化测试必须通过，代码覆盖率不低于 85%，新功能必须包含测试
+- 自动化测试必须通过，新功能必须包含测试
 
 ## 详细文档
 

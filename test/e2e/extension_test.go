@@ -32,7 +32,9 @@ func TestExtension_NewEventType_Fire(t *testing.T) {
 	// query — NPC 应该离开 Idle
 	resp = sendAndRecv(t, conn, makeQueryMsg("npc_1"))
 	var q protocol.QueryNPCResponse
-	json.Unmarshal(resp.Data, &q)
+	if err := json.Unmarshal(resp.Data, &q); err != nil {
+		t.Fatalf("unmarshal query response: %v", err)
+	}
 
 	if q.FSMState == "Idle" {
 		t.Errorf("civilian should respond to fire event, still Idle")
@@ -56,7 +58,9 @@ func TestExtension_NewNPCType_Police(t *testing.T) {
 		t.Fatalf("expected response, got %s", resp.Type)
 	}
 	var spawnResp protocol.SpawnNPCResponse
-	json.Unmarshal(resp.Data, &spawnResp)
+	if err := json.Unmarshal(resp.Data, &spawnResp); err != nil {
+		t.Fatalf("unmarshal spawn response: %v", err)
+	}
 	if spawnResp.TypeName != "police" {
 		t.Fatalf("expected police, got %s", spawnResp.TypeName)
 	}
@@ -64,7 +68,9 @@ func TestExtension_NewNPCType_Police(t *testing.T) {
 	// query — 初始状态 Idle
 	resp = sendAndRecv(t, conn, makeQueryMsg("police_1"))
 	var q protocol.QueryNPCResponse
-	json.Unmarshal(resp.Data, &q)
+	if err := json.Unmarshal(resp.Data, &q); err != nil {
+		t.Fatalf("unmarshal query response: %v", err)
+	}
 	if q.FSMState != "Idle" {
 		t.Fatalf("expected Idle, got %s", q.FSMState)
 	}
@@ -75,7 +81,9 @@ func TestExtension_NewNPCType_Police(t *testing.T) {
 
 	// query — police 应进入 Engage（不是 Flee）
 	resp = sendAndRecv(t, conn, makeQueryMsg("police_1"))
-	json.Unmarshal(resp.Data, &q)
+	if err := json.Unmarshal(resp.Data, &q); err != nil {
+		t.Fatalf("unmarshal query response: %v", err)
+	}
 
 	if q.FSMState == "Idle" {
 		t.Errorf("police should respond to explosion, still Idle")
@@ -107,12 +115,16 @@ func TestExtension_CrossTypeEvent_CivilianFlees_PoliceEngages(t *testing.T) {
 	// civilian 应该 Flee
 	resp := sendAndRecv(t, conn, makeQueryMsg("civ_1"))
 	var civQ protocol.QueryNPCResponse
-	json.Unmarshal(resp.Data, &civQ)
+	if err := json.Unmarshal(resp.Data, &civQ); err != nil {
+		t.Fatalf("unmarshal civilian query: %v", err)
+	}
 
 	// police 应该 Engage
 	resp = sendAndRecv(t, conn, makeQueryMsg("pol_1"))
 	var polQ protocol.QueryNPCResponse
-	json.Unmarshal(resp.Data, &polQ)
+	if err := json.Unmarshal(resp.Data, &polQ); err != nil {
+		t.Fatalf("unmarshal police query: %v", err)
+	}
 
 	// 关键验证：同一事件，不同 NPC 类型，不同行为
 	if civQ.FSMState == "Idle" {

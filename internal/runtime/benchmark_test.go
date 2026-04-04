@@ -3,6 +3,8 @@ package runtime_test
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -92,12 +94,11 @@ func TestTick_100NPCs_Under10ms(t *testing.T) {
 
 func benchConfigsDir(b *testing.B) string {
 	b.Helper()
-	return configsDirPath()
-}
-
-func configsDirPath() string {
-	// internal/runtime/ → 项目根目录
-	return "../../configs"
+	wd, err := os.Getwd()
+	if err != nil {
+		b.Fatal(err)
+	}
+	return filepath.Join(wd, "..", "..", "configs")
 }
 
 func benchLoadEvtTypes(b *testing.B, src config.Source) map[string]*event.EventTypeConfig {

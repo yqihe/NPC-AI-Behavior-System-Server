@@ -16,8 +16,8 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
 
 ### 2. 运营平台（Admin）
 
-- **状态**：待规划
-- **独立服务**：`NPC-AI-Behavior-System-Admin/`，与游戏服务端通过 MongoDB 解耦
+- **状态**：已完成（配置 CRUD + API）
+- **独立服务**：`NPC-AI-Behavior-System-Admin/`，游戏服务端通过 HTTP API 拉取配置
 - **技术栈**：Web 前端 + Go/Node 后端 + MongoDB（读写）+ Redis（缓存读取）
 - **核心功能**：
   - NPC 类型管理：表单化创建（名称输入、感知范围滑块、状态机模板下拉、行为节点选择）
@@ -31,9 +31,9 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
   - 服务端开发：通过表单化编辑器添加高级配置（有模板、校验、自动补全，不手写裸 JSON）
 - **与游戏服务端的关系**：
   - 运营平台随时写 MongoDB，不影响正在运行的游戏
-  - 游戏服务端下次启动时自动加载最新配置
+  - 游戏服务端启动时全量拉取配置到内存，配置源优先级：`NPC_ADMIN_API`（ADMIN HTTP API）> `NPC_MONGO_URI`（MongoDB 直连）> JSON 文件
+  - 推荐通过 ADMIN API 解耦，MongoDB 直连作为备选
   - 更新流程：运营改配置 → 发停服公告 → 到点停服 → 重启服务 → 新配置生效
-  - 两者互不调用，通过 MongoDB 数据解耦
 - **Redis 使用**：运营平台独立服务，Redis 缓存 MongoDB 查询（多用户频繁读取配置列表），与游戏服务端无关
 
 ### 3. 扩展轴步骤 5：NPC 间交互
@@ -65,8 +65,9 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
 
 ### 6. 更多 NPC 类型和事件
 
-- 补充 NPC 类型：商人（Merchant）、医生（Doctor）、守卫（Guard）
-- 补充事件类型：robbery（抢劫）、medical_emergency（医疗紧急）、alarm（警报）
+- 已完成：守卫（Guard，含 patrol/alert/defend 行为树）、平民瑟缩（Cower 状态）、earthquake 事件——通过 ADMIN 联调添加，零代码改动
+- 待补充 NPC 类型：商人（Merchant）、医生（Doctor）
+- 待补充事件类型：robbery（抢劫）、medical_emergency（医疗紧急）、alarm（警报）
 - 通过运营平台添加，验证"策划加配置不改代码"的完整流程
 
 ### 7. BT 节点丰富化
@@ -109,17 +110,17 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
 
 ```
 ┌──────────────┐     ┌───────────────┐     ┌──────────────┐
-│ Unity 客户端  │────→│  游戏服务端    │←────│   MongoDB    │
-│  (表现层)     │ WS  │  (AI 引擎)    │启动读│  (配置存储)   │
+│ Unity 客户端  │────→│  游戏服务端    │────→│  运营平台后端  │
+│  (表现层)     │ WS  │  (AI 引擎)    │HTTP │  + Redis 缓存 │
 └──────────────┘     └───────────────┘     └──────┬───────┘
                                                    │ 读写
                      ┌───────────────┐     ┌──────┴───────┐
-                     │  运营平台前端   │────→│  运营平台后端  │
-                     │  (策划使用)    │HTTP │  + Redis 缓存 │
+                     │  运营平台前端   │────→│   MongoDB    │
+                     │  (策划使用)    │HTTP │  (配置存储)   │
                      └───────────────┘     └──────────────┘
 ```
 
-更新流程：运营平台改配置 → 发公告 → 停服 → 重启游戏服务端 → 加载最新配置 → 开服
+更新流程：运营平台改配置 → 发公告 → 停服 → 重启游戏服务端 → 从 ADMIN API 拉取最新配置 → 开服
 
 ---
 

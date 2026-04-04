@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"log/slog"
 	"time"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
@@ -52,6 +53,7 @@ func (s *Scheduler) Tick(dt float64) {
 		for _, evt := range activeEvents {
 			typeCfg, ok := s.EvtTypes[evt.Type]
 			if !ok {
+				slog.Warn("scheduler.event_type_not_found", "event_type", evt.Type)
 				continue
 			}
 			if perception.CanPerceive(inst.Position, inst.Perception, evt, typeCfg) {

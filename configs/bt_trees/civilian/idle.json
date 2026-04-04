@@ -1,4 +1,7 @@
 {
-    "type": "stub_action",
-    "params": {"name": "idle_wander", "result": "success"}
+  "type": "stub_action",
+  "params": {
+    "name": "idle_wander",
+    "result": "success"
+  }
 }

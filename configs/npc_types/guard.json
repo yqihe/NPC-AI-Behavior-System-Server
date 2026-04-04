@@ -1,0 +1,13 @@
+{
+  "type_name": "guard",
+  "fsm_ref": "guard",
+  "bt_refs": {
+    "Patrol": "guard/patrol",
+    "Alert": "guard/alert",
+    "Defend": "guard/defend"
+  },
+  "perception": {
+    "visual_range": 250,
+    "auditory_range": 600
+  }
+}

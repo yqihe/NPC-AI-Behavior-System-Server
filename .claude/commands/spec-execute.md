@@ -40,7 +40,7 @@
 
 ## 写代码时必须检查
 
-参考 `docs/development/go-pitfalls.md`，重点关注：
+参考 `docs/standards/go-pitfalls.md`，重点关注：
 
 - **并发安全**：是否有共享状态？多 goroutine 读写同一个 map/slice/struct？加锁了吗？
 - **资源泄漏**：goroutine 有退出路径吗？打开的连接/文件有 defer Close 吗？
@@ -81,4 +81,4 @@ log.Debug("组件.动作", "key1", val1, "key2", val2)
 
 ## 经验沉淀
 
-执行过程中踩到的 Go 坑追加到 `docs/development/go-pitfalls.md`。发现的新禁令追加到 `docs/architecture/red-lines.md`。
+执行过程中踩到的 Go 坑追加到 `docs/standards/go-pitfalls.md`。发现的新禁令追加到 `docs/standards/red-lines.md`（通用）或 `docs/architecture/red-lines.md`（项目专属）。

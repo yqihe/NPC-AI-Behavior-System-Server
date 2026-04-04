@@ -3,6 +3,7 @@ package npc
 import (
 	"encoding/json"
 	"fmt"
+	"log/slog"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
@@ -85,7 +86,8 @@ func (inst *Instance) Tick() {
 	currentState := inst.FSM.Current()
 	tree, ok := inst.BTrees[currentState]
 	if !ok {
-		return // 该状态没有行为树，跳过
+		slog.Debug("npc.tick.bt_not_found", "npc_id", inst.ID, "state", currentState)
+		return
 	}
 
 	// 3. BT Tick

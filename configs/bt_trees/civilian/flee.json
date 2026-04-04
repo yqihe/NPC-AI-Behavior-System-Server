@@ -1,11 +1,48 @@
 {
-    "type": "sequence",
-    "children": [
-        {"type": "set_bb_value", "params": {"key": "current_action", "value": "assess_threat"}},
-        {"type": "check_bb_float", "params": {"key": "threat_level", "op": ">=", "value": 30}},
-        {"type": "set_bb_value", "params": {"key": "current_action", "value": "plan_escape"}},
-        {"type": "stub_action", "params": {"name": "calculate_route", "result": "success"}},
-        {"type": "set_bb_value", "params": {"key": "current_action", "value": "run_away"}},
-        {"type": "stub_action", "params": {"name": "flee_run", "result": "success"}}
-    ]
+  "type": "sequence",
+  "children": [
+    {
+      "type": "set_bb_value",
+      "params": {
+        "key": "current_action",
+        "value": "assess_threat"
+      }
+    },
+    {
+      "type": "check_bb_float",
+      "params": {
+        "key": "threat_level",
+        "op": "\u003e=",
+        "value": 30
+      }
+    },
+    {
+      "type": "set_bb_value",
+      "params": {
+        "key": "current_action",
+        "value": "plan_escape"
+      }
+    },
+    {
+      "type": "stub_action",
+      "params": {
+        "name": "calculate_route",
+        "result": "success"
+      }
+    },
+    {
+      "type": "set_bb_value",
+      "params": {
+        "key": "current_action",
+        "value": "run_away"
+      }
+    },
+    {
+      "type": "stub_action",
+      "params": {
+        "name": "flee_run",
+        "result": "success"
+      }
+    }
+  ]
 }

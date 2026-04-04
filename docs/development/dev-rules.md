@@ -129,3 +129,5 @@ docker compose down
 | Admin 联调：handler return | writeError 后忘记 return 导致二次写入或空指针 | `go-pitfalls.md` → HTTP Handler |
 | Admin 联调：omitempty 零值 | `severity: 0` 被 omitempty 丢弃，合法业务值消失 | `go-pitfalls.md` → HTTP Handler |
 | Admin 联调：bson tag | 缺 bson tag 导致 MongoDB 字段名大写开头，读回映射失败 | `go-pitfalls.md` → HTTP Handler |
+| Admin 联调：CalcThreat global | global 事件 range=0，CalcThreat 对 range≤0 返回 0 导致 threat_level 永远是 0，感知层正确但决策层漏处理 | `decision.go` 修复；边界测试脚本验证 |
+| Admin 联调：边界测试污染 | 多个测试场景串行执行，前一个 earthquake（TTL=30s）还在活跃导致后续阈值测试被污染 | 测试脚本需隔离场景或等待 TTL 过期 |

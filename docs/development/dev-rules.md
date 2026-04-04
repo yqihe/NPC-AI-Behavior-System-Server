@@ -124,3 +124,8 @@ docker compose down
 | gateway-layer 代码审查 | 路径穿越、Broadcast 死锁、BT key 运行时 panic、nil slice JSON null、条件歧义——6 个 bug 集中在 Gateway 首版代码中 | `red-lines.md` → 禁止安全隐患；`go-pitfalls.md` → channel 生命周期、nil slice JSON |
 | mongo-source 类型丢失 | `json.Unmarshal` 到 `any` 把整数变 float64，存入 MongoDB 后反序列化 int 字段失败。涉及外部依赖的功能必须端到端验证，不能只跑单元测试 | `go-pitfalls.md` → json int/float 丢失；`red-lines.md` → 禁止死配置 |
 | mongo-source .env 命名 | `.env.prod` 被 `.env.*` gitignore 规则挡住，模板文件和实际文件没区分。模板用 `.example` 后缀，实际文件保持忽略 | `deployment.md` → 文件规范 |
+| Admin 联调：MongoDB 操作符注入 | Admin 审查时发现 name 查询需防 `$` 前缀注入 | `red-lines.md` → 禁止安全隐患 |
+| Admin 联调：静默降级 | 无效枚举值被默认值兜底，NPC 行为静默失效，比 panic 更难发现 | `red-lines.md` → 禁止静默降级 |
+| Admin 联调：handler return | writeError 后忘记 return 导致二次写入或空指针 | `go-pitfalls.md` → HTTP Handler |
+| Admin 联调：omitempty 零值 | `severity: 0` 被 omitempty 丢弃，合法业务值消失 | `go-pitfalls.md` → HTTP Handler |
+| Admin 联调：bson tag | 缺 bson tag 导致 MongoDB 字段名大写开头，读回映射失败 | `go-pitfalls.md` → HTTP Handler |

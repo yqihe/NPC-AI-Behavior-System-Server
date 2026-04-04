@@ -38,6 +38,14 @@
 - **fmt.Sprintf 在热路径上很慢**：Tick 循环内避免用 Sprintf 拼日志 key，用预定义常量
 - **time.After 在循环里会泄漏**：每次调用创建一个 timer 不会被回收直到触发。用 `time.NewTimer` + `Reset`
 
+## HTTP Handler
+
+来源：Admin 运营平台开发中的教训。
+
+- **writeError 后必须 return**：`writeError(w, 400, "bad request")` 不会中断函数执行。如果忘记 `return`，后续代码继续跑，可能二次写入 ResponseWriter 或空指针 panic
+- **omitempty 吞零值**：`json:"severity,omitempty"` 会把 `severity: 0` 序列化时丢弃。`0` 是合法业务值（如 severity 为 0 的事件）时，不要用 omitempty。只在字段确实是"可选且零值表示缺失"时使用
+- **bson tag 漏写**：struct 字段只写了 `json` tag 没写 `bson` tag，MongoDB 存储时字段名变成大写开头（Go 默认行为），读回来映射不上。涉及 MongoDB 的 struct 必须同时写 `json` 和 `bson` tag
+
 ## 测试
 
 - **测试里的 goroutine panic 不会导致测试失败**：会直接崩掉整个进程。测试中的 goroutine 里用 `t.Error` 而非 `panic`

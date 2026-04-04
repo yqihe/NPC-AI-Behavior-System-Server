@@ -11,17 +11,4 @@ services:
       - NPC_LOG_FORMAT=${NPC_LOG_FORMAT:-text}
       - NPC_MONGO_URI=${NPC_MONGO_URI:-}
       - NPC_ADMIN_API=${NPC_ADMIN_API:-}
-    depends_on:
-      mongo:
-        condition: service_started
     restart: unless-stopped
-
-  mongo:
-    image: mongo:7
-    ports:
-      - "${MONGO_PORT:-27017}:27017"
-    volumes:
-      - mongo_data:/data/db
-
-volumes:
-  mongo_data:

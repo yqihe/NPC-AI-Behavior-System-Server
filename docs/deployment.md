@@ -25,7 +25,8 @@
 
 | 文件 | 用途 | Git 跟踪 |
 |------|------|---------|
-| `.env` | dev 环境默认值 | 是 |
+| `.env.example` | dev 环境默认值模板 | 是 |
+| `.env` | dev 环境实际值（从 `.env.example` 复制） | **否**（gitignore） |
 | `.env.prod.example` | prod 环境模板 | 是 |
 | `.env.prod` | prod 实际值（可能含密码） | **否**（gitignore） |
 | `configs/server.json` | 服务端启动配置（addr、tick_rate 等） | 是 |
@@ -37,6 +38,14 @@
 | `docker-compose.yml` | 服务编排 | 是 |
 
 ## dev 环境
+
+### 首次设置
+
+```bash
+# 从模板创建本地环境文件（.env 不入库）
+cp .env.example .env
+# 按需修改 .env 中的配置值
+```
 
 ### 启动
 

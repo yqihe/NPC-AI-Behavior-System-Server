@@ -103,11 +103,13 @@ docs/
 
 ## Git 工作流
 
-- **主分支**：`main`（只接受 PR）
-- **开发分支**：`develop`（日常开发）
+- **主分支**：`main`（受保护，只接受 PR，禁止 force push）
 - **功能分支**：`feature/task-id-description`
 - **修复分支**：`hotfix/critical-bug-description`
+- **合并策略**：仅 Squash Merge（PR 合并后 main 上保持单条干净提交）
+- **分支清理**：PR 合并后远端分支自动删除
 - 自动化测试必须通过，新功能必须包含测试
+- **环境配置**：`.env` 不入库，首次开发需 `cp .env.example .env`
 
 ## 详细文档
 

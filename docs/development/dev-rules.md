@@ -30,7 +30,7 @@ docker compose down              # 停止
 
 - 多阶段构建：builder 阶段 `go build`，runtime 阶段仅含二进制
 - 先复制 `go.mod`/`go.sum` 再复制源码，利用层缓存
-- 环境变量通过 Compose 或 `.env` 注入，不硬编码
+- 环境变量通过 Compose 或 `.env` 注入（`.env` 不入库，首次开发需 `cp .env.example .env`），不硬编码
 
 ### 本地开发不受限
 

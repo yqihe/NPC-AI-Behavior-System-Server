@@ -20,12 +20,15 @@
   - 范围：模块路径，如 `core/fsm`、`runtime/decision`
 - 每个需求创建 feature 分支，按 task 逐个 commit
 - 全部 task 完成且验证通过后合并
+- **main 分支受保护**：禁止直接 push，禁止 force push，只能通过 PR 合并
+- **合并方式**：仅 Squash Merge，保持 main 历史干净
+- **分支清理**：PR 合并后远端分支自动删除，不留废弃分支
 
 ## 代码提交纪律
 
 - **每次 commit 后必须考虑是否需要 push 到远端**。本地 commit 不等于提交——只有 push 后代码才进入协作流程
 - **阶段性工作完成后必须 push**：一轮代码修改+测试通过后，立即 push，不要囤积本地 commit
-- **push 后考虑是否需要合并**：feature 分支工作完成后，创建 PR 合并到主分支
+- **push 后必须创建 PR 并合并**：feature/hotfix 分支 push 到远端后，如果该分支还没有对应的 PR，立即创建 PR；无冲突则直接 merge，有冲突则报告用户处理
 
 ## 经验沉淀
 

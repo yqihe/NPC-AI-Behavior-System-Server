@@ -249,10 +249,6 @@ func TestIntegration_Scenario4_EventPreemption(t *testing.T) {
 // --- 场景 5：加新事件源不改代码 ---
 
 func TestIntegration_Scenario5_NewEventTypeFromConfig(t *testing.T) {
-	// 创建临时事件配置
-	tmpDir := t.TempDir()
-
-	// 复制已有配置目录结构
 	src := config.NewJSONSource(configsDir(t))
 	evtTypes := loadEvtTypes(t, src)
 
@@ -291,14 +287,14 @@ func TestIntegration_Scenario5_NewEventTypeFromConfig(t *testing.T) {
 	}
 
 	// NPC 应该响应（Tick → 状态转换）
+	// fire severity=60, distance=50, range=150 → threat = 60*(1-50/150) = 40
+	// threat_level=40 < 50, 所以不会从 Alarmed → Flee，但应该 Idle → Alarmed
+	// 因为 last_event_type != ""
 	inst.Tick()
-	if inst.FSM.Current() == "Idle" {
-		// fire severity=60, distance=50, range=150 → threat = 60*(1-50/150) = 40
-		// threat_level=40 < 50, 所以不会从 Alarmed → Flee，但应该 Idle → Alarmed
-		// 因为 last_event_type != ""
+	if inst.FSM.Current() != "Alarmed" {
+		t.Errorf("expected Alarmed after fire event, got %s", inst.FSM.Current())
 	}
 	// 关键验证：没有修改任何 Go 代码，NPC 自动响应了新事件类型
-	_ = tmpDir
 }
 
 // --- 场景 6：Runtime × Core 联调 ---

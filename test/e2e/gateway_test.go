@@ -36,7 +36,9 @@ func TestSpawnAndQuery(t *testing.T) {
 		t.Fatalf("expected response, got %s", resp.Type)
 	}
 	var spawnResp protocol.SpawnNPCResponse
-	json.Unmarshal(resp.Data, &spawnResp)
+	if err := json.Unmarshal(resp.Data, &spawnResp); err != nil {
+		t.Fatalf("unmarshal spawn response: %v", err)
+	}
 	if spawnResp.NpcID != "npc_1" || spawnResp.TypeName != "civilian" {
 		t.Fatalf("unexpected spawn response: %+v", spawnResp)
 	}
@@ -47,7 +49,9 @@ func TestSpawnAndQuery(t *testing.T) {
 		t.Fatalf("expected response, got %s", resp.Type)
 	}
 	var queryResp protocol.QueryNPCResponse
-	json.Unmarshal(resp.Data, &queryResp)
+	if err := json.Unmarshal(resp.Data, &queryResp); err != nil {
+		t.Fatalf("unmarshal query response: %v", err)
+	}
 
 	if queryResp.NpcID != "npc_1" {
 		t.Errorf("npc_id: got %s, want npc_1", queryResp.NpcID)
@@ -86,7 +90,9 @@ func TestRemoveNPC(t *testing.T) {
 		t.Fatalf("expected error, got %s", resp.Type)
 	}
 	var errResp protocol.ErrorResponse
-	json.Unmarshal(resp.Data, &errResp)
+	if err := json.Unmarshal(resp.Data, &errResp); err != nil {
+		t.Fatalf("unmarshal error response: %v", err)
+	}
 	if errResp.Code != "npc_not_found" {
 		t.Errorf("error code: got %s, want npc_not_found", errResp.Code)
 	}
@@ -109,7 +115,9 @@ func TestPublishEvent(t *testing.T) {
 		t.Fatalf("expected response, got %s", resp.Type)
 	}
 	var evtResp protocol.PublishEventResponse
-	json.Unmarshal(resp.Data, &evtResp)
+	if err := json.Unmarshal(resp.Data, &evtResp); err != nil {
+		t.Fatalf("unmarshal event response: %v", err)
+	}
 	if evtResp.EventID == "" {
 		t.Fatal("expected non-empty event_id")
 	}
@@ -120,7 +128,9 @@ func TestPublishEvent(t *testing.T) {
 	// query → 状态应该不再是 Idle
 	resp = sendAndRecv(t, conn, makeQueryMsg("npc_1"))
 	var queryResp protocol.QueryNPCResponse
-	json.Unmarshal(resp.Data, &queryResp)
+	if err := json.Unmarshal(resp.Data, &queryResp); err != nil {
+		t.Fatalf("unmarshal query response: %v", err)
+	}
 
 	if queryResp.FSMState == "Idle" {
 		t.Errorf("expected NPC to leave Idle after explosion, still Idle")
@@ -229,7 +239,9 @@ func TestUnknownMessage(t *testing.T) {
 		t.Fatalf("expected error, got %s", resp.Type)
 	}
 	var errResp protocol.ErrorResponse
-	json.Unmarshal(resp.Data, &errResp)
+	if err := json.Unmarshal(resp.Data, &errResp); err != nil {
+		t.Fatalf("unmarshal error response: %v", err)
+	}
 	if errResp.Code != "unknown_message_type" {
 		t.Errorf("error code: got %s, want unknown_message_type", errResp.Code)
 	}
@@ -255,7 +267,9 @@ func TestSpawnDuplicateID(t *testing.T) {
 		t.Fatalf("second spawn: expected error, got %s", resp.Type)
 	}
 	var errResp protocol.ErrorResponse
-	json.Unmarshal(resp.Data, &errResp)
+	if err := json.Unmarshal(resp.Data, &errResp); err != nil {
+		t.Fatalf("unmarshal error response: %v", err)
+	}
 	if errResp.Code != "npc_already_exists" {
 		t.Errorf("error code: got %s, want npc_already_exists", errResp.Code)
 	}

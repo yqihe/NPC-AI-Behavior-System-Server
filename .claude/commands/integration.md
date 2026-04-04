@@ -40,6 +40,8 @@
 1. <问题>
 ```
 
+**格式要求**：PROPOSAL 只用表格和文字描述，**禁止贴 JSON 原文**。仅在以下情况例外：(1) 需要新增字段/修改结构 schema 时；(2) 修 Bug 需要展示具体 JSON 差异时。
+
 **发送前检查**：状态名首字母大写、bt_refs key 与 FSM state 一致、BB Key 在白名单、stub_action result ∈ {success,failure,running}、op ∈ {==,!=,>,>=,<,<=}、global 事件 range=0
 
 ### 第 2 步：CONFIRM（确认方 → 方案方）
@@ -57,7 +59,29 @@
 
 **服务端确认时必查**：BB Key 注册情况（`blackboard/keys.go`）、global 事件在感知层和决策层的行为、ref_key 类型匹配
 
-确认通过 → ADMIN 执行页面操作（按顺序：事件→状态机→行为树→NPC）
+确认通过 → ADMIN 执行配置写入（按顺序：事件→行为树→状态机→NPC）
+
+### 第 2.5 步：ADMIN 执行配置写入（CONFIRM 后、READY 前）
+
+**硬性规定：所有配置变更必须通过 REST API 写入 MongoDB，禁止只修改 `configs/` 目录下的本地参考文件。**
+
+`configs/` 目录是离线参考，游戏服务端通过 `/api/configs/*` 从 MongoDB 读取数据。只改本地文件不会影响 MongoDB，服务端 sync 拉不到变更。
+
+**执行步骤**：
+1. **创建**被引用项（先创建 BT tree，再创建 FSM，因为 NPC type 会校验引用是否存在）
+   - 新 BT tree → `POST /api/v1/bt-trees`
+   - 新 FSM → `POST /api/v1/fsm-configs`
+   - 新事件类型 → `POST /api/v1/event-types`
+2. **更新**已有配置
+   - 改 FSM → `PUT /api/v1/fsm-configs/{name}`
+   - 改 NPC type → `PUT /api/v1/npc-types/{name}`
+3. **验证**：每次 API 调用后检查返回的 JSON 是否包含预期变更
+4. **同步 `configs/` 参考文件**（可选但推荐，保持参考文件与 MongoDB 一致）
+
+**禁止事项**：
+- ❌ 只修改 `configs/*.json` 就回复 READY
+- ❌ 跳过 API 返回值检查
+- ❌ 先更新引用方（NPC type）再创建被引用项（BT tree）——会被校验拦截
 
 ### 第 3 步：READY（ADMIN → 服务端）
 
@@ -70,7 +94,13 @@
 
 ### 第 4 步：RESULT（服务端 → ADMIN）
 
-服务端重启加载 + WebSocket 测试后回复：
+服务端收到 READY 后，**必须先执行配置同步**再验证：
+
+```bash
+go run ./cmd/sync -api http://<ADMIN地址>
+```
+
+同步完成后再运行测试：
 
 ```
 ## [RESULT] <标题>

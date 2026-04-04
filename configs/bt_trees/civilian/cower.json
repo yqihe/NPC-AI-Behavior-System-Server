@@ -1,0 +1,33 @@
+{
+  "type": "sequence",
+  "children": [
+    {
+      "type": "set_bb_value",
+      "params": {
+        "key": "current_action",
+        "value": "crouch_down"
+      }
+    },
+    {
+      "type": "stub_action",
+      "params": {
+        "name": "crouch_down",
+        "result": "success"
+      }
+    },
+    {
+      "type": "set_bb_value",
+      "params": {
+        "key": "current_action",
+        "value": "cover_head"
+      }
+    },
+    {
+      "type": "stub_action",
+      "params": {
+        "name": "cover_head",
+        "result": "running"
+      }
+    }
+  ]
+}

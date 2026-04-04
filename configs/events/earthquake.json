@@ -1,0 +1,7 @@
+{
+  "name": "earthquake",
+  "default_severity": 95,
+  "default_ttl": 30,
+  "perception_mode": "global",
+  "range": 0
+}

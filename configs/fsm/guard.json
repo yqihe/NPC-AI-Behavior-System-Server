@@ -1,20 +1,20 @@
 {
-  "initial_state": "Idle",
+  "initial_state": "Patrol",
   "states": [
     {
-      "name": "Idle"
+      "name": "Patrol"
     },
     {
-      "name": "Alarmed"
+      "name": "Alert"
     },
     {
-      "name": "Engage"
+      "name": "Defend"
     }
   ],
   "transitions": [
     {
-      "from": "Idle",
-      "to": "Alarmed",
+      "from": "Patrol",
+      "to": "Alert",
       "priority": 10,
       "condition": {
         "key": "last_event_type",
@@ -23,27 +23,28 @@
       }
     },
     {
-      "from": "Alarmed",
-      "to": "Engage",
+      "from": "Alert",
+      "to": "Defend",
       "priority": 10,
       "condition": {
         "and": [
           {
             "key": "threat_level",
             "op": "\u003e=",
-            "value": 30
+            "value": 60
           },
           {
             "key": "threat_expire_at",
             "op": "\u003e",
+            "value": "",
             "ref_key": "current_time"
           }
         ]
       }
     },
     {
-      "from": "Alarmed",
-      "to": "Idle",
+      "from": "Alert",
+      "to": "Patrol",
       "priority": 5,
       "condition": {
         "key": "last_event_type",
@@ -52,19 +53,20 @@
       }
     },
     {
-      "from": "Engage",
-      "to": "Idle",
+      "from": "Defend",
+      "to": "Patrol",
       "priority": 5,
       "condition": {
         "or": [
           {
             "key": "threat_level",
             "op": "\u003c",
-            "value": 10
+            "value": 20
           },
           {
             "key": "threat_expire_at",
             "op": "\u003c=",
+            "value": "",
             "ref_key": "current_time"
           }
         ]

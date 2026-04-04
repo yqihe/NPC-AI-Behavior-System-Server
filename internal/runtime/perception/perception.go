@@ -1,6 +1,8 @@
 package perception
 
 import (
+	"log/slog"
+
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 )
 
@@ -25,6 +27,7 @@ func CanPerceive(npcPos event.Vec3, cfg *PerceptionConfig, evt *event.Event, evt
 		maxRange := min(cfg.AuditoryRange, evtTypeCfg.Range)
 		return dist <= maxRange
 	default:
+		slog.Warn("perception.unknown_mode", "mode", evtTypeCfg.PerceptionMode, "event_type", evtTypeCfg.Name)
 		return false
 	}
 }

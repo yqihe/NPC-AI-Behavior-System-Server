@@ -100,7 +100,7 @@ func fetchEndpoint(ctx context.Context, client *http.Client, url string, target 
 		if item.Name == "" {
 			continue
 		}
-		target[item.Name] = []byte(item.Config)
+		target[item.Name] = item.Config
 	}
 
 	if len(target) == 0 {

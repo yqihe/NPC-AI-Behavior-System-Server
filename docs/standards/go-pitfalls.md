@@ -25,10 +25,18 @@
 - **typed nil vs nil interface**：`var p *MyStruct = nil; var i interface{} = p; i != nil` 是 true
 - **空接口断言失败 panic**：`val.(int)` 如果 val 不是 int 会 panic。用 `val, ok := val.(int)` 两值形式
 
+## 资源管理
+
+- **外部连接必须关闭**：`mongo.Client`、`http.Response.Body` 等必须在 graceful shutdown 或 defer 中显式关闭
+- **cursor.Close 不能用查询 context**：查询 context 可能已超时，Close 会失败导致 cursor 泄漏。用 `context.Background()` 关闭
+- **graceful shutdown 顺序**：先停止接受请求 → 等待进行中请求完成 → 关闭数据库/缓存连接。顺序反了会导致请求写入已关闭的连接
+- **禁止多个 goroutine close 同一 channel**：用单一 owner 或 `sync.Once` 保护
+
 ## 错误处理
 
 - **禁止忽略 error**：`f, _ := os.Open(path)` 后面用 f 会 nil pointer panic。除非确定不会出错且写了注释
 - **禁止忽略 json.Unmarshal error**：测试和生产代码中都必须检查。忽略会让格式问题静默通过
+- **typed nil 陷阱**：`var e *MyError = nil; return e` 会导致 `err != nil` 为 true。直接 `return nil`
 - **errors.Is / errors.As**：比较 error 用 `errors.Is`，提取具体类型用 `errors.As`
 - **defer Close 的 error**：写文件时需要 `defer func() { err = f.Close() }()` 或显式检查
 

@@ -36,6 +36,18 @@ func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Re
 			return nil
 		}
 
+		// 校验必填字段
+		if req.NpcID == "" {
+			resp, _ := protocol.NewError(msg.ID, "invalid_data", "npc_id cannot be empty")
+			conn.sendMsg(resp)
+			return nil
+		}
+		if req.TypeName == "" {
+			resp, _ := protocol.NewError(msg.ID, "invalid_data", "type_name cannot be empty")
+			conn.sendMsg(resp)
+			return nil
+		}
+
 		// 检查重复 ID
 		if _, ok := registry.Get(req.NpcID); ok {
 			resp, _ := protocol.NewError(msg.ID, "npc_already_exists", "NPC with id "+req.NpcID+" already exists")
@@ -64,7 +76,7 @@ func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Re
 		inst, err := npc.NewInstance(req.NpcID, pos, typeCfg, src, btReg)
 		if err != nil {
 			slog.Warn("handler.spawn_npc.create", "npc_id", req.NpcID, "err", err)
-			resp, _ := protocol.NewError(msg.ID, "create_error", err.Error())
+			resp, _ := protocol.NewError(msg.ID, "create_error", "failed to create NPC instance")
 			conn.sendMsg(resp)
 			return nil
 		}
@@ -86,6 +98,12 @@ func makeRemoveNPCHandler(registry *npc.Registry) HandlerFunc {
 		var req protocol.RemoveNPCRequest
 		if err := json.Unmarshal(msg.Data, &req); err != nil {
 			resp, _ := protocol.NewError(msg.ID, "invalid_data", "failed to parse remove_npc request")
+			conn.sendMsg(resp)
+			return nil
+		}
+
+		if req.NpcID == "" {
+			resp, _ := protocol.NewError(msg.ID, "invalid_data", "npc_id cannot be empty")
 			conn.sendMsg(resp)
 			return nil
 		}
@@ -116,6 +134,12 @@ func makePublishEventHandler(bus *event.Bus, evtTypes map[string]*event.EventTyp
 			return nil
 		}
 
+		if req.EventType == "" {
+			resp, _ := protocol.NewError(msg.ID, "invalid_data", "event_type cannot be empty")
+			conn.sendMsg(resp)
+			return nil
+		}
+
 		typeCfg, ok := evtTypes[req.EventType]
 		if !ok {
 			resp, _ := protocol.NewError(msg.ID, "unknown_event_type", "event type "+req.EventType+" not found")
@@ -141,6 +165,12 @@ func makeQueryNPCHandler(registry *npc.Registry) HandlerFunc {
 		var req protocol.QueryNPCRequest
 		if err := json.Unmarshal(msg.Data, &req); err != nil {
 			resp, _ := protocol.NewError(msg.ID, "invalid_data", "failed to parse query_npc request")
+			conn.sendMsg(resp)
+			return nil
+		}
+
+		if req.NpcID == "" {
+			resp, _ := protocol.NewError(msg.ID, "invalid_data", "npc_id cannot be empty")
 			conn.sendMsg(resp)
 			return nil
 		}

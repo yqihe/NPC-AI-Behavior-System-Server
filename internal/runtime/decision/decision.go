@@ -60,10 +60,11 @@ func (c *Center) Evaluate(bb *blackboard.Blackboard, npcPos event.Vec3, events [
 }
 
 // CalcThreat 计算单个事件对 NPC 的威胁值
-// threat = severity × max(0, 1 - distance/range)
+// range > 0: threat = severity × max(0, 1 - distance/range)
+// range <= 0: global 事件，threat = severity（无距离衰减）
 func CalcThreat(severity float64, npcPos, evtPos event.Vec3, evtRange float64) float64 {
 	if evtRange <= 0 {
-		return 0
+		return severity
 	}
 	dist := event.Distance(npcPos, evtPos)
 	factor := math.Max(0, 1-dist/evtRange)

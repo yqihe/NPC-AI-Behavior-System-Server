@@ -49,10 +49,11 @@ func TestCalcThreat_BeyondRange(t *testing.T) {
 	}
 }
 
-func TestCalcThreat_ZeroRange(t *testing.T) {
-	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{0, 0, 0}, 0)
-	if threat != 0 {
-		t.Errorf("expected 0 for zero range, got %f", threat)
+func TestCalcThreat_ZeroRange_Global(t *testing.T) {
+	// range=0 表示 global 事件，威胁值直接等于 severity，无距离衰减
+	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{100, 0, 100}, 0)
+	if threat != 80 {
+		t.Errorf("expected 80 (severity) for global event, got %f", threat)
 	}
 }
 

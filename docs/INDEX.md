@@ -1,19 +1,25 @@
 # 文档索引
 
-## architecture/ — 架构与约束
+## standards/ — 通用标准（可跨项目复用）
 | 文档 | 内容概括 | 何时查阅 |
 |------|----------|----------|
-| [overview.md](architecture/overview.md) | 架构总览：五层分层、各层组件职责、数据流、代码规模、技术选型 | 首次了解项目时 |
-| [red-lines.md](architecture/red-lines.md) | 禁止事项红线（硬编码、层次破坏、弱类型、实验污染、安全隐患、过度设计） | 编写或审查代码时 |
+| [red-lines.md](standards/red-lines.md) | 通用禁止红线（安全、静默降级、过度设计、测试质量） | 编写或审查任何代码时 |
+| [dev-rules.md](standards/dev-rules.md) | 通用开发规则（文档同步、Git 规范、日志、经验沉淀） | 所有开发活动 |
+| [go-pitfalls.md](standards/go-pitfalls.md) | Go 语言陷阱与禁令（并发、数据结构、JSON/BSON、测试） | 写 Go 代码和 review 时 |
+
+## architecture/ — 项目架构与约束
+| 文档 | 内容概括 | 何时查阅 |
+|------|----------|----------|
+| [overview.md](architecture/overview.md) | 架构总览：五层分层、各层组件职责、数据流 | 首次了解项目时 |
+| [red-lines.md](architecture/red-lines.md) | 项目架构红线（硬编码、层次、弱类型、实验、联调） | 编写或审查项目代码时 |
 | [decisions.md](architecture/decisions.md) | 7 项核心架构决策 + 配置覆盖范围 | 做设计选型时 |
 | [extension-axes.md](architecture/extension-axes.md) | 三个扩展轴 + 渐进式验证路径 | 验证可扩展性时 |
 
-## development/ — 开发规范
+## development/ — 项目开发规范
 | 文档 | 内容概括 | 何时查阅 |
 |------|----------|----------|
-| [dev-rules.md](development/dev-rules.md) | 日志格式、文档同步、Git 规则、Agent 规则、Docker 构建与运行、经验沉淀 | 所有开发活动 |
-| [go-pitfalls.md](development/go-pitfalls.md) | Go 常见陷阱（并发、数据结构、接口、错误处理、性能） | 写代码和 review 时 |
-| [deployment.md](deployment.md) | 环境规范（dev/prod 区分）、部署流程、环境变量、文件规范 | 部署和环境切换时 |
+| [dev-rules.md](development/dev-rules.md) | 项目专属规则（日志格式、Docker、联调 sync、Agent） | 项目日常开发 |
+| [deployment.md](deployment.md) | 环境规范（dev/prod 区分）、部署流程、环境变量 | 部署和环境切换时 |
 | [protocol.md](protocol.md) | WebSocket 协议规范（消息类型、字段、交互流程） | 客户端对接时 |
 
 ## specs/ — 功能层 Spec（需求 → 设计 → 任务）
@@ -21,15 +27,15 @@
 |------|------|----------|
 | [specs/core-engine/](specs/core-engine/) | 已完成 | Blackboard、FSM、BT、Rule 四大引擎 |
 | [specs/runtime-layer/](specs/runtime-layer/) | 已完成 | 事件总线、感知过滤、决策中心、NPC 调度 |
-| [specs/experiment-layer/](specs/experiment-layer/) | 已完成 | 5 模式对照实验框架 + 定性/定量数据采集（含 [data-collection-guide.md](specs/experiment-layer/data-collection-guide.md)） |
+| [specs/experiment-layer/](specs/experiment-layer/) | 已完成 | 5 模式对照实验框架 + 定性/定量数据采集 |
 | [specs/gateway-layer/](specs/gateway-layer/) | 已完成 | WebSocket 连接、消息路由、状态广播 |
-| [specs/extension-validation/](specs/extension-validation/) | 已完成 | 扩展轴验证（fire 事件 + police NPC，零代码改动） |
+| [specs/extension-validation/](specs/extension-validation/) | 已完成 | 扩展轴验证（fire 事件 + police NPC） |
 | [specs/mongo-source/](specs/mongo-source/) | 已完成 | MongoDB 配置源 + dev/prod 环境切换 |
 
 ## 项目规划
 | 文档 | 内容概括 | 何时查阅 |
 |------|----------|----------|
-| [roadmap.md](roadmap.md) | 未来规划：短期（答辩前）、中期（优化）、长期（维护）、明确排除项 | 规划下一步工作时 |
+| [roadmap.md](roadmap.md) | 未来规划：短期、中期、长期、明确排除项 | 规划下一步工作时 |
 
 ## history/ — 历史参考
 | 文档 | 内容概括 | 何时查阅 |

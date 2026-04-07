@@ -10,6 +10,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/social"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/pkg/protocol"
 )
 
@@ -21,15 +22,16 @@ func RegisterHandlers(
 	src config.Source,
 	btReg *bt.Registry,
 	compReg *component.Registry,
+	gm *social.GroupManager,
 	evtTypes map[string]*event.EventTypeConfig,
 ) {
-	router.Register(protocol.TypeSpawnNPC, makeSpawnNPCHandler(registry, src, btReg, compReg))
-	router.Register(protocol.TypeRemoveNPC, makeRemoveNPCHandler(registry))
+	router.Register(protocol.TypeSpawnNPC, makeSpawnNPCHandler(registry, src, btReg, compReg, gm))
+	router.Register(protocol.TypeRemoveNPC, makeRemoveNPCHandler(registry, gm))
 	router.Register(protocol.TypePublishEvent, makePublishEventHandler(bus, evtTypes))
 	router.Register(protocol.TypeQueryNPC, makeQueryNPCHandler(registry))
 }
 
-func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Registry, compReg *component.Registry) HandlerFunc {
+func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Registry, compReg *component.Registry, gm *social.GroupManager) HandlerFunc {
 	return func(conn *Conn, msg *protocol.Message) error {
 		var req protocol.SpawnNPCRequest
 		if err := json.Unmarshal(msg.Data, &req); err != nil {
@@ -91,6 +93,9 @@ func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Re
 		}
 
 		registry.Add(inst)
+		if gm != nil {
+			gm.Register(inst)
+		}
 		slog.Debug("handler.spawn_npc", "npc_id", req.NpcID, "type", req.TypeName)
 
 		resp, _ := protocol.NewResponse(msg.ID, protocol.SpawnNPCResponse{
@@ -102,7 +107,7 @@ func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Re
 	}
 }
 
-func makeRemoveNPCHandler(registry *npc.Registry) HandlerFunc {
+func makeRemoveNPCHandler(registry *npc.Registry, gm *social.GroupManager) HandlerFunc {
 	return func(conn *Conn, msg *protocol.Message) error {
 		var req protocol.RemoveNPCRequest
 		if err := json.Unmarshal(msg.Data, &req); err != nil {
@@ -117,12 +122,16 @@ func makeRemoveNPCHandler(registry *npc.Registry) HandlerFunc {
 			return nil
 		}
 
-		if _, ok := registry.Get(req.NpcID); !ok {
+		inst, ok := registry.Get(req.NpcID)
+		if !ok {
 			resp, _ := protocol.NewError(msg.ID, "npc_not_found", "NPC with id "+req.NpcID+" not found")
 			conn.sendMsg(resp)
 			return nil
 		}
 
+		if gm != nil {
+			gm.Unregister(inst)
+		}
 		registry.Remove(req.NpcID)
 		slog.Debug("handler.remove_npc", "npc_id", req.NpcID)
 

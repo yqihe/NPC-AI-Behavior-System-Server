@@ -105,7 +105,23 @@ func (s *JSONSource) LoadAllEventConfigs() (map[string][]byte, error) {
 	return result, nil
 }
 
-// LoadNPCTypeConfig 加载 NPC 类型配置：configs/npc_types/<npcType>.json
+// LoadNPCTemplate 加载组件化 NPC 模板：configs/npc_templates/<name>.json
+func (s *JSONSource) LoadNPCTemplate(name string) ([]byte, error) {
+	if err := safePath(name); err != nil {
+		return nil, err
+	}
+	path := filepath.Join(s.basePath, "npc_templates", name+".json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("config: load NPC template %q: %w", name, err)
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("config: NPC template %q is not valid JSON", name)
+	}
+	return data, nil
+}
+
+// LoadNPCTypeConfig 加载 NPC 类型配置：configs/npc_types/<npcType>.json（v2 兼容）
 func (s *JSONSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {
 	if err := safePath(npcType); err != nil {
 		return nil, err

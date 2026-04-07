@@ -24,10 +24,11 @@ type configDoc struct {
 
 // MongoSource 从 MongoDB 加载配置，启动时全量加载到内存
 type MongoSource struct {
-	npcTypes   map[string][]byte // name → raw JSON
-	fsmConfigs map[string][]byte // name → raw JSON
-	btTrees    map[string][]byte // name → raw JSON
-	eventTypes map[string][]byte // name → raw JSON
+	npcTypes     map[string][]byte // name → raw JSON（v2 兼容）
+	npcTemplates map[string][]byte // name → raw JSON（v3 组件化）
+	fsmConfigs   map[string][]byte // name → raw JSON
+	btTrees      map[string][]byte // name → raw JSON
+	eventTypes   map[string][]byte // name → raw JSON
 }
 
 // NewMongoSource 连接 MongoDB，全量加载配置到内存，然后断开连接
@@ -45,24 +46,31 @@ func NewMongoSource(ctx context.Context, uri, database string) (*MongoSource, er
 	db := client.Database(database)
 
 	s := &MongoSource{
-		npcTypes:   make(map[string][]byte),
-		fsmConfigs: make(map[string][]byte),
-		btTrees:    make(map[string][]byte),
-		eventTypes: make(map[string][]byte),
+		npcTypes:     make(map[string][]byte),
+		npcTemplates: make(map[string][]byte),
+		fsmConfigs:   make(map[string][]byte),
+		btTrees:      make(map[string][]byte),
+		eventTypes:   make(map[string][]byte),
 	}
 
 	loaders := []struct {
 		collection string
 		target     map[string][]byte
+		optional   bool
 	}{
-		{"event_types", s.eventTypes},
-		{"npc_types", s.npcTypes},
-		{"fsm_configs", s.fsmConfigs},
-		{"bt_trees", s.btTrees},
+		{"event_types", s.eventTypes, false},
+		{"npc_types", s.npcTypes, false},
+		{"fsm_configs", s.fsmConfigs, false},
+		{"bt_trees", s.btTrees, false},
+		{"npc_templates", s.npcTemplates, true},
 	}
 
 	for _, l := range loaders {
 		if err := loadCollection(ctx, db, l.collection, l.target); err != nil {
+			if l.optional {
+				slog.Warn("config.mongo.optional_collection_skipped", "collection", l.collection, "err", err)
+				continue
+			}
 			return nil, err
 		}
 		slog.Info("config.mongo.loaded", "collection", l.collection, "count", len(l.target))
@@ -149,6 +157,17 @@ func (s *MongoSource) LoadAllEventConfigs() (map[string][]byte, error) {
 		result[name] = data
 	}
 	return result, nil
+}
+
+func (s *MongoSource) LoadNPCTemplate(name string) ([]byte, error) {
+	data, ok := s.npcTemplates[name]
+	if !ok {
+		return nil, fmt.Errorf("config: NPC template %q not found in MongoDB", name)
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("config: NPC template %q is not valid JSON", name)
+	}
+	return data, nil
 }
 
 func (s *MongoSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {

@@ -29,3 +29,26 @@ var KeyNPCPosZ = NewKey[float64]("npc_pos_z")  // NPC 位置 Z，Runtime 每 Tic
 var KeyCurrentAction   = NewKey[string]("current_action")    // BT 当前执行的子行为名
 var KeyAlertStartTick  = NewKey[int64]("alert_start_tick")   // 进入 Alarmed 状态的时间戳
 var KeyExitCleanupDone = NewKey[string]("exit_cleanup_done") // FSM OnExit 清理完成标记
+
+// --- 需求系统 ---
+
+var KeyNeedLowest    = NewKey[string]("need_lowest")      // 当前最低需求名
+var KeyNeedLowestVal = NewKey[float64]("need_lowest_val") // 当前最低需求值
+
+// --- 情绪系统 ---
+
+var KeyEmotionDominant    = NewKey[string]("emotion_dominant")      // 主导情绪名
+var KeyEmotionDominantVal = NewKey[float64]("emotion_dominant_val") // 主导情绪值
+
+// --- 记忆系统 ---
+
+var KeyMemoryCount = NewKey[int64]("memory_count") // 当前记忆条目数
+
+// --- 社交系统 ---
+
+var KeyGroupID    = NewKey[string]("group_id")     // 群组 ID
+var KeySocialRole = NewKey[string]("social_role")   // 社交角色（leader/follower）
+
+// --- 移动系统 ---
+
+var KeyMoveState = NewKey[string]("move_state") // 移动状态（idle/moving/arrived）

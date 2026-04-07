@@ -7,6 +7,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/pkg/protocol"
@@ -19,15 +20,16 @@ func RegisterHandlers(
 	bus *event.Bus,
 	src config.Source,
 	btReg *bt.Registry,
+	compReg *component.Registry,
 	evtTypes map[string]*event.EventTypeConfig,
 ) {
-	router.Register(protocol.TypeSpawnNPC, makeSpawnNPCHandler(registry, src, btReg))
+	router.Register(protocol.TypeSpawnNPC, makeSpawnNPCHandler(registry, src, btReg, compReg))
 	router.Register(protocol.TypeRemoveNPC, makeRemoveNPCHandler(registry))
 	router.Register(protocol.TypePublishEvent, makePublishEventHandler(bus, evtTypes))
 	router.Register(protocol.TypeQueryNPC, makeQueryNPCHandler(registry))
 }
 
-func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Registry) HandlerFunc {
+func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Registry, compReg *component.Registry) HandlerFunc {
 	return func(conn *Conn, msg *protocol.Message) error {
 		var req protocol.SpawnNPCRequest
 		if err := json.Unmarshal(msg.Data, &req); err != nil {
@@ -55,25 +57,32 @@ func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Re
 			return nil
 		}
 
-		// 加载 NPC 类型配置
-		rawCfg, err := src.LoadNPCTypeConfig(req.TypeName)
+		pos := event.Vec3{X: req.X, Z: req.Z}
+
+		// 尝试加载配置：先新格式（npc_templates），再旧格式（npc_types）
+		rawCfg, err := src.LoadNPCTemplate(req.TypeName)
 		if err != nil {
-			slog.Warn("handler.spawn_npc.load_config", "type", req.TypeName, "err", err)
-			resp, _ := protocol.NewError(msg.ID, "config_error", "failed to load NPC type: "+req.TypeName)
-			conn.sendMsg(resp)
-			return nil
+			// 降级到旧格式
+			rawCfg, err = src.LoadNPCTypeConfig(req.TypeName)
+			if err != nil {
+				slog.Warn("handler.spawn_npc.load_config", "type", req.TypeName, "err", err)
+				resp, _ := protocol.NewError(msg.ID, "config_error", "failed to load NPC type: "+req.TypeName)
+				conn.sendMsg(resp)
+				return nil
+			}
 		}
-		typeCfg, err := npc.ParseNPCTypeConfig(rawCfg)
+
+		// 统一解析（自动检测新旧格式）
+		tmpl, err := npc.ParseNPCTemplate(rawCfg)
 		if err != nil {
 			slog.Warn("handler.spawn_npc.parse_config", "type", req.TypeName, "err", err)
-			resp, _ := protocol.NewError(msg.ID, "config_error", "failed to parse NPC type config")
+			resp, _ := protocol.NewError(msg.ID, "config_error", "failed to parse NPC config")
 			conn.sendMsg(resp)
 			return nil
 		}
 
-		// 创建 NPC 实例
-		pos := event.Vec3{X: req.X, Z: req.Z}
-		inst, err := npc.NewInstance(req.NpcID, pos, typeCfg, src, btReg)
+		// 创建组件化 NPC 实例
+		inst, err := npc.NewInstanceFromTemplate(req.NpcID, pos, tmpl, compReg, src, btReg)
 		if err != nil {
 			slog.Warn("handler.spawn_npc.create", "npc_id", req.NpcID, "err", err)
 			resp, _ := protocol.NewError(msg.ID, "create_error", "failed to create NPC instance")
@@ -185,12 +194,20 @@ func makeQueryNPCHandler(registry *npc.Registry) HandlerFunc {
 		currentAction, _ := blackboard.Get(inst.BB, blackboard.KeyCurrentAction)
 		threatLevel, _ := blackboard.Get(inst.BB, blackboard.KeyThreatLevel)
 
+		// 从 behavior 组件安全读取 FSM 状态
+		fsmState := ""
+		if beh, ok := npc.GetComponent[*component.BehaviorComponent](inst, "behavior"); ok && beh.FSM != nil {
+			fsmState = beh.FSM.Current()
+		} else if inst.FSM != nil {
+			fsmState = inst.FSM.Current()
+		}
+
 		resp, _ := protocol.NewResponse(msg.ID, protocol.QueryNPCResponse{
 			NpcID:         inst.ID,
 			TypeName:      inst.TypeName,
 			X:             inst.Position.X,
 			Z:             inst.Position.Z,
-			FSMState:      inst.FSM.Current(),
+			FSMState:      fsmState,
 			CurrentAction: currentAction,
 			ThreatLevel:   threatLevel,
 		})

@@ -16,6 +16,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/gateway"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
@@ -37,6 +38,7 @@ func startTestServer(t *testing.T) (wsURL string, cleanup func()) {
 
 	src := config.NewJSONSource(configsDir)
 	btReg := bt.DefaultRegistry()
+	compReg := component.DefaultRegistry()
 
 	// 加载事件类型
 	rawConfigs, err := src.LoadAllEventConfigs()
@@ -61,7 +63,7 @@ func startTestServer(t *testing.T) (wsURL string, cleanup func()) {
 	// 初始化 Gateway
 	hub := gateway.NewHub()
 	router := gateway.NewRouter()
-	gateway.RegisterHandlers(router, reg, bus, src, btReg, evtTypes)
+	gateway.RegisterHandlers(router, reg, bus, src, btReg, compReg, evtTypes)
 
 	// 随机端口
 	listener, err := net.Listen("tcp", "127.0.0.1:0")

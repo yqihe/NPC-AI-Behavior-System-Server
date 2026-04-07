@@ -11,6 +11,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
@@ -87,6 +88,63 @@ func TestTick_100NPCs_Under10ms(t *testing.T) {
 		t.Errorf("single Tick exceeded 10ms: max=%v", maxDuration)
 	} else {
 		t.Logf("100 NPC Tick max duration: %v", maxDuration)
+	}
+}
+
+// BenchmarkTick_SimpleNPC 只有 identity+position+movement 的 NPC，单 Tick 目标 < 1μs
+func BenchmarkTick_SimpleNPC(b *testing.B) {
+	src := config.NewJSONSource(benchConfigsDir(b))
+	btReg := bt.DefaultRegistry()
+	compReg := component.DefaultRegistry()
+
+	raw, err := src.LoadNPCTemplate("butterfly_01")
+	if err != nil {
+		b.Fatal(err)
+	}
+	tmpl, err := npc.ParseNPCTemplate(raw)
+	if err != nil {
+		b.Fatal(err)
+	}
+	inst, err := npc.NewInstanceFromTemplate("bench_simple", event.Vec3{}, tmpl, compReg, src, btReg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		inst.TickComponents(0.1)
+	}
+}
+
+// BenchmarkTick_ReactiveNPC reactive 级 NPC（behavior+perception+movement+personality），Scheduler 完整管线
+func BenchmarkTick_ReactiveNPC(b *testing.B) {
+	src := config.NewJSONSource(benchConfigsDir(b))
+	btReg := bt.DefaultRegistry()
+	compReg := component.DefaultRegistry()
+	evtTypes := benchLoadEvtTypes(b, src)
+
+	raw, err := src.LoadNPCTemplate("wolf_common")
+	if err != nil {
+		b.Fatal(err)
+	}
+	tmpl, err := npc.ParseNPCTemplate(raw)
+	if err != nil {
+		b.Fatal(err)
+	}
+	inst, err := npc.NewInstanceFromTemplate("bench_reactive", event.Vec3{300, 0, 400}, tmpl, compReg, src, btReg)
+	if err != nil {
+		b.Fatal(err)
+	}
+
+	bus := event.NewBus()
+	reg := npc.NewRegistry()
+	reg.Add(inst)
+	dec := decision.NewCenter(10.0)
+	sched := runtime.NewScheduler(bus, reg, dec, evtTypes, 100*time.Millisecond)
+
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		sched.Tick(0.1)
 	}
 }
 

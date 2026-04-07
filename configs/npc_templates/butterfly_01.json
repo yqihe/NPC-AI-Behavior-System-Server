@@ -1,0 +1,23 @@
+{
+  "name": "butterfly_01",
+  "preset": "simple",
+  "components": {
+    "identity": {
+      "name": "蝴蝶",
+      "model_id": "butterfly_blue",
+      "tags": ["ambient", "flying"]
+    },
+    "position": {
+      "x": 100,
+      "y": 5,
+      "z": 200,
+      "orientation": 0,
+      "zone_id": "meadow"
+    },
+    "movement": {
+      "move_type": "wander",
+      "move_speed": 1.5,
+      "wander_radius": 20
+    }
+  }
+}

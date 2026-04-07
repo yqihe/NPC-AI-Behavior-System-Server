@@ -42,10 +42,11 @@ type Event struct {
 	Severity float64 // 实际 severity
 	TTL      float64 // 剩余生存时间（秒），每 Tick 递减
 	SourceID string  // 事件来源实体 ID
+	ZoneID   string  // 事件发生的区域 ID，空字符串表示不限区域
 }
 
 // NewEvent 从事件类型配置创建事件实例，可覆盖 severity
-func NewEvent(typeCfg *EventTypeConfig, pos Vec3, sourceID string, severityOverride float64) *Event {
+func NewEvent(typeCfg *EventTypeConfig, pos Vec3, sourceID string, severityOverride float64, zoneID string) *Event {
 	severity := typeCfg.DefaultSeverity
 	if severityOverride > 0 {
 		severity = severityOverride
@@ -58,6 +59,7 @@ func NewEvent(typeCfg *EventTypeConfig, pos Vec3, sourceID string, severityOverr
 		Severity: severity,
 		TTL:      typeCfg.DefaultTTL,
 		SourceID: sourceID,
+		ZoneID:   zoneID,
 	}
 }
 

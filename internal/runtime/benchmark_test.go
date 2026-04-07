@@ -37,7 +37,7 @@ func BenchmarkTick_100NPCs(b *testing.B) {
 	// 发布一些事件
 	explosionCfg := evtTypes["explosion"]
 	for i := 0; i < 5; i++ {
-		evt := event.NewEvent(explosionCfg, event.Vec3{X: float64(i * 100), Z: float64(i * 100)}, fmt.Sprintf("bomb_%d", i), 80)
+		evt := event.NewEvent(explosionCfg, event.Vec3{X: float64(i * 100), Z: float64(i * 100)}, fmt.Sprintf("bomb_%d", i), 80, "")
 		bus.Publish(evt)
 	}
 
@@ -67,7 +67,7 @@ func TestTick_100NPCs_Under10ms(t *testing.T) {
 
 	explosionCfg := evtTypes["explosion"]
 	for i := 0; i < 5; i++ {
-		evt := event.NewEvent(explosionCfg, event.Vec3{X: float64(i * 100), Z: float64(i * 100)}, fmt.Sprintf("bomb_%d", i), 80)
+		evt := event.NewEvent(explosionCfg, event.Vec3{X: float64(i * 100), Z: float64(i * 100)}, fmt.Sprintf("bomb_%d", i), 80, "")
 		bus.Publish(evt)
 	}
 

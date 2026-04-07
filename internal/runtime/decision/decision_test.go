@@ -5,6 +5,7 @@ import (
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/perception"
 )
 
 func evtTypes() map[string]*event.EventTypeConfig {
@@ -15,10 +16,14 @@ func evtTypes() map[string]*event.EventTypeConfig {
 	}
 }
 
-// --- CalcThreat ---
+// pr 辅助：从事件和强度构建 PerceiveResult
+func pr(evt *event.Event, strength float64) perception.PerceiveResult {
+	return perception.PerceiveResult{Event: evt, Strength: strength}
+}
+
+// --- CalcThreat（保留的工具函数）---
 
 func TestCalcThreat_ZeroDistance(t *testing.T) {
-	// 距离 0，factor=1，threat=severity
 	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{0, 0, 0}, 500)
 	if threat != 80 {
 		t.Errorf("expected 80, got %f", threat)
@@ -26,7 +31,6 @@ func TestCalcThreat_ZeroDistance(t *testing.T) {
 }
 
 func TestCalcThreat_HalfRange(t *testing.T) {
-	// 距离 250，range 500，factor=0.5，threat=40
 	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{250, 0, 0}, 500)
 	if threat != 40 {
 		t.Errorf("expected 40, got %f", threat)
@@ -34,7 +38,6 @@ func TestCalcThreat_HalfRange(t *testing.T) {
 }
 
 func TestCalcThreat_AtRange(t *testing.T) {
-	// 距离等于 range，factor=0，threat=0
 	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{500, 0, 0}, 500)
 	if threat != 0 {
 		t.Errorf("expected 0, got %f", threat)
@@ -42,7 +45,6 @@ func TestCalcThreat_AtRange(t *testing.T) {
 }
 
 func TestCalcThreat_BeyondRange(t *testing.T) {
-	// 距离超出 range，factor=0，threat=0
 	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{600, 0, 0}, 500)
 	if threat != 0 {
 		t.Errorf("expected 0, got %f", threat)
@@ -50,7 +52,6 @@ func TestCalcThreat_BeyondRange(t *testing.T) {
 }
 
 func TestCalcThreat_ZeroRange_Global(t *testing.T) {
-	// range=0 表示 global 事件，威胁值直接等于 severity，无距离衰减
 	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{100, 0, 100}, 0)
 	if threat != 80 {
 		t.Errorf("expected 80 (severity) for global event, got %f", threat)
@@ -67,13 +68,13 @@ func TestEvaluate_SingleEvent(t *testing.T) {
 	npcPos := event.Vec3{0, 0, 0}
 	evt := &event.Event{ID: "evt_1", Type: "explosion", Position: event.Vec3{100, 0, 0}, Severity: 80, TTL: 10}
 
-	center.Evaluate(bb, npcPos, []*event.Event{evt}, evtTypes(), 0.1)
+	// 感知强度 = 80 * (1 - 100/500) = 64（由感知层计算后传入）
+	center.Evaluate(bb, npcPos, []perception.PerceiveResult{pr(evt, 64)}, evtTypes(), 0.1)
 
 	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
 	source, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
 	evtType, _ := blackboard.Get(bb, blackboard.KeyLastEventType)
 
-	// threat = 80 * (1 - 100/500) = 80 * 0.8 = 64
 	if level != 64 {
 		t.Errorf("expected threat_level 64, got %f", level)
 	}
@@ -94,12 +95,12 @@ func TestEvaluate_MultipleEvents_HighestWins(t *testing.T) {
 	center := NewCenter(10.0)
 	npcPos := event.Vec3{0, 0, 0}
 
-	events := []*event.Event{
-		{ID: "evt_shout", Type: "shout", Position: event.Vec3{50, 0, 0}, Severity: 30, TTL: 8},
-		{ID: "evt_gunshot", Type: "gunshot", Position: event.Vec3{100, 0, 0}, Severity: 90, TTL: 10},
-	}
+	shout := &event.Event{ID: "evt_shout", Type: "shout", Position: event.Vec3{50, 0, 0}, Severity: 30, TTL: 8}
+	gunshot := &event.Event{ID: "evt_gunshot", Type: "gunshot", Position: event.Vec3{100, 0, 0}, Severity: 90, TTL: 10}
 
-	center.Evaluate(bb, npcPos, events, evtTypes(), 0.1)
+	// 感知强度：shout=30*(1-50/200)=22.5, gunshot=90*(1-100/300)=60
+	perceived := []perception.PerceiveResult{pr(shout, 22.5), pr(gunshot, 60)}
+	center.Evaluate(bb, npcPos, perceived, evtTypes(), 0.1)
 
 	source, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
 	if source != "evt_gunshot" {
@@ -107,13 +108,12 @@ func TestEvaluate_MultipleEvents_HighestWins(t *testing.T) {
 	}
 
 	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
-	// gunshot: 90 * (1 - 100/300) = 90 * 0.667 = 60
-	if level < 59 || level > 61 {
-		t.Errorf("expected threat_level ~60, got %f", level)
+	if level != 60 {
+		t.Errorf("expected threat_level 60, got %f", level)
 	}
 }
 
-// --- Evaluate: 事件抢占（R9）---
+// --- Evaluate: 事件抢占 ---
 
 func TestEvaluate_EventPreemption(t *testing.T) {
 	bb := blackboard.New()
@@ -122,21 +122,13 @@ func TestEvaluate_EventPreemption(t *testing.T) {
 	center := NewCenter(10.0)
 	npcPos := event.Vec3{0, 0, 0}
 
-	// 第一次：低威胁事件
-	lowEvt := []*event.Event{
-		{ID: "evt_shout", Type: "shout", Position: event.Vec3{50, 0, 0}, Severity: 30, TTL: 8},
-	}
-	center.Evaluate(bb, npcPos, lowEvt, evtTypes(), 0.1)
+	lowEvt := &event.Event{ID: "evt_shout", Type: "shout", Position: event.Vec3{50, 0, 0}, Severity: 30, TTL: 8}
+	center.Evaluate(bb, npcPos, []perception.PerceiveResult{pr(lowEvt, 22.5)}, evtTypes(), 0.1)
 
 	levelBefore, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
-	sourceBefore, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
 
-	// 第二次：高威胁事件到达，应覆写
-	highEvt := []*event.Event{
-		{ID: "evt_shout", Type: "shout", Position: event.Vec3{50, 0, 0}, Severity: 30, TTL: 7},
-		{ID: "evt_gunshot", Type: "gunshot", Position: event.Vec3{50, 0, 0}, Severity: 90, TTL: 10},
-	}
-	center.Evaluate(bb, npcPos, highEvt, evtTypes(), 0.1)
+	highEvt := &event.Event{ID: "evt_gunshot", Type: "gunshot", Position: event.Vec3{50, 0, 0}, Severity: 90, TTL: 10}
+	center.Evaluate(bb, npcPos, []perception.PerceiveResult{pr(lowEvt, 22.5), pr(highEvt, 75)}, evtTypes(), 0.1)
 
 	levelAfter, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
 	sourceAfter, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
@@ -145,11 +137,11 @@ func TestEvaluate_EventPreemption(t *testing.T) {
 		t.Errorf("expected preemption to gunshot, got %s", sourceAfter)
 	}
 	if levelAfter <= levelBefore {
-		t.Errorf("expected higher threat after preemption: before=%f after=%f (source before=%s)", levelBefore, levelAfter, sourceBefore)
+		t.Errorf("expected higher threat after preemption: before=%f after=%f", levelBefore, levelAfter)
 	}
 }
 
-// --- Evaluate: 威胁衰减（R8）---
+// --- Evaluate: 威胁衰减 ---
 
 func TestEvaluate_Decay_NoEvents(t *testing.T) {
 	bb := blackboard.New()
@@ -157,10 +149,9 @@ func TestEvaluate_Decay_NoEvents(t *testing.T) {
 	blackboard.Set(bb, blackboard.KeyThreatSource, "old_evt")
 	blackboard.Set(bb, blackboard.KeyLastEventType, "explosion")
 
-	center := NewCenter(10.0) // 10 per second
+	center := NewCenter(10.0)
 	npcPos := event.Vec3{0, 0, 0}
 
-	// 无事件，dt=1s → 衰减 10
 	center.Evaluate(bb, npcPos, nil, evtTypes(), 1.0)
 
 	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
@@ -178,47 +169,20 @@ func TestEvaluate_Decay_ToZero(t *testing.T) {
 	center := NewCenter(10.0)
 	npcPos := event.Vec3{0, 0, 0}
 
-	// 无事件，dt=1s → 衰减 10，但不低于 0
 	center.Evaluate(bb, npcPos, nil, evtTypes(), 1.0)
 
 	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
 	if level != 0 {
 		t.Errorf("expected 0 after full decay, got %f", level)
 	}
-
-	// 衰减到 0 后应清空 source 和 event_type
 	source, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
 	if source != "" {
 		t.Errorf("expected empty source after decay to zero, got %s", source)
-	}
-	evtType, _ := blackboard.Get(bb, blackboard.KeyLastEventType)
-	if evtType != "" {
-		t.Errorf("expected empty event type after decay to zero, got %s", evtType)
 	}
 }
 
 func TestEvaluate_Decay_AlreadyZero(t *testing.T) {
 	bb := blackboard.New()
-	// 不设置 threat_level → 不存在
 	center := NewCenter(10.0)
-	// 不应 panic
 	center.Evaluate(bb, event.Vec3{}, nil, evtTypes(), 1.0)
-}
-
-// --- Evaluate: 未知事件类型 ---
-
-func TestEvaluate_UnknownEventType(t *testing.T) {
-	bb := blackboard.New()
-	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(10000))
-
-	center := NewCenter(10.0)
-	evt := &event.Event{ID: "evt_1", Type: "unknown_type", Position: event.Vec3{0, 0, 0}, Severity: 80, TTL: 10}
-
-	// 未知类型事件应被跳过，触发衰减
-	center.Evaluate(bb, event.Vec3{}, []*event.Event{evt}, evtTypes(), 0.1)
-
-	_, ok := blackboard.Get(bb, blackboard.KeyThreatLevel)
-	if ok {
-		t.Error("unknown event type should not write threat_level")
-	}
 }

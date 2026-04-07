@@ -157,9 +157,9 @@ func makePublishEventHandler(bus *event.Bus, evtTypes map[string]*event.EventTyp
 		}
 
 		pos := event.Vec3{X: req.X, Z: req.Z}
-		evt := event.NewEvent(typeCfg, pos, req.SourceID, req.Severity)
+		evt := event.NewEvent(typeCfg, pos, req.SourceID, req.Severity, req.ZoneID)
 		bus.Publish(evt)
-		slog.Debug("handler.publish_event", "event_id", evt.ID, "type", req.EventType)
+		slog.Debug("handler.publish_event", "event_id", evt.ID, "type", req.EventType, "zone_id", req.ZoneID)
 
 		resp, _ := protocol.NewResponse(msg.ID, protocol.PublishEventResponse{
 			EventID: evt.ID,

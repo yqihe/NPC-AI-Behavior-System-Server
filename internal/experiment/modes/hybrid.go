@@ -75,18 +75,19 @@ func (h *HybridNPC) BB() *blackboard.Blackboard { return h.inst.BB }
 
 // --- 共用工具 ---
 
-func filterPerceived(pos event.Vec3, cfg *perception.PerceptionConfig, events []*event.Event, evtTypes map[string]*event.EventTypeConfig) []*event.Event {
-	perceived := make([]*event.Event, 0, len(events))
+func filterPerceived(pos event.Vec3, cfg *perception.PerceptionConfig, events []*event.Event, evtTypes map[string]*event.EventTypeConfig) []perception.PerceiveResult {
+	var results []perception.PerceiveResult
 	for _, evt := range events {
 		typeCfg, ok := evtTypes[evt.Type]
 		if !ok {
 			continue
 		}
-		if perception.CanPerceive(pos, cfg, evt, typeCfg) {
-			perceived = append(perceived, evt)
+		strength := perception.CalcStrength(pos, cfg, evt, typeCfg)
+		if strength > 0 {
+			results = append(results, perception.PerceiveResult{Event: evt, Strength: strength})
 		}
 	}
-	return perceived
+	return results
 }
 
 func registerLifecycleCallbacks(f *fsm.FSM, bb *blackboard.Blackboard) {

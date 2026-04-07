@@ -20,8 +20,8 @@ func benchSetup() ([]*event.Event, map[string]*event.EventTypeConfig) {
 	evtType := &event.EventTypeConfig{Name: "test", DefaultSeverity: 80, DefaultTTL: 15, PerceptionMode: "auditory", Range: 500}
 	evtTypes := map[string]*event.EventTypeConfig{"test": evtType}
 	events := []*event.Event{
-		event.NewEvent(evtType, event.Vec3{X: 50}, "bomb_0", 80),
-		event.NewEvent(evtType, event.Vec3{X: 150}, "bomb_1", 60),
+		event.NewEvent(evtType, event.Vec3{X: 50}, "bomb_0", 80, ""),
+		event.NewEvent(evtType, event.Vec3{X: 150}, "bomb_1", 60, ""),
 	}
 	return events, evtTypes
 }

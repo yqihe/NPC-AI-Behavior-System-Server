@@ -3,6 +3,7 @@ package runtime
 import (
 	"context"
 	"log/slog"
+	"sort"
 	"time"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
@@ -53,12 +54,11 @@ func (s *Scheduler) Tick(dt float64) {
 		// --- AI 管线（仅有对应组件的 NPC 执行）---
 
 		// 4a. 感知过滤（需要 perception 组件）
-		var perceived []*event.Event
+		var perceived []perception.PerceiveResult
 		if perc, ok := npc.GetComponent[*component.PerceptionComponent](inst, "perception"); ok {
 			perceived = s.filterPerception(inst, perc, activeEvents)
 		} else if inst.Perception != nil {
-			// v2 兼容：旧路径创建的 NPC 仍用 inst.Perception
-			perceived = make([]*event.Event, 0, len(activeEvents))
+			// v2 兼容：旧路径创建的 NPC，用 CanPerceive + CalcThreat 包装
 			for _, evt := range activeEvents {
 				typeCfg, ok := s.EvtTypes[evt.Type]
 				if !ok {
@@ -66,7 +66,8 @@ func (s *Scheduler) Tick(dt float64) {
 					continue
 				}
 				if perception.CanPerceive(inst.Position, inst.Perception, evt, typeCfg) {
-					perceived = append(perceived, evt)
+					strength := decision.CalcThreat(evt.Severity, inst.Position, evt.Position, typeCfg.Range)
+					perceived = append(perceived, perception.PerceiveResult{Event: evt, Strength: strength})
 				}
 			}
 		}
@@ -91,24 +92,46 @@ func (s *Scheduler) Tick(dt float64) {
 	})
 }
 
-// filterPerception 从 PerceptionComponent 提取参数，过滤可感知事件
-func (s *Scheduler) filterPerception(inst *npc.Instance, perc *component.PerceptionComponent, events []*event.Event) []*event.Event {
+// filterPerception 感知过滤：区域隔离 → 强度计算 → 注意力裁剪
+func (s *Scheduler) filterPerception(inst *npc.Instance, perc *component.PerceptionComponent, events []*event.Event) []perception.PerceiveResult {
+	// 获取 NPC 所在区域
+	npcZoneID := ""
+	if pos, ok := npc.GetComponent[*component.PositionComponent](inst, "position"); ok {
+		npcZoneID = pos.ZoneID
+	}
+
 	cfg := &perception.PerceptionConfig{
 		VisualRange:   perc.VisualRange,
 		AuditoryRange: perc.AuditoryRange,
 	}
-	perceived := make([]*event.Event, 0, len(events))
+
+	var results []perception.PerceiveResult
 	for _, evt := range events {
 		typeCfg, ok := s.EvtTypes[evt.Type]
 		if !ok {
 			slog.Warn("scheduler.event_type_not_found", "event_type", evt.Type)
 			continue
 		}
-		if perception.CanPerceive(inst.Position, cfg, evt, typeCfg) {
-			perceived = append(perceived, evt)
+		// 区域过滤
+		if perception.ShouldFilterByZone(npcZoneID, evt.ZoneID, typeCfg.PerceptionMode) {
+			continue
+		}
+		// 强度计算
+		strength := perception.CalcStrength(inst.Position, cfg, evt, typeCfg)
+		if strength > 0 {
+			results = append(results, perception.PerceiveResult{Event: evt, Strength: strength})
 		}
 	}
-	return perceived
+
+	// 注意力裁剪：按强度降序，保留前 AttentionCapacity 个
+	if perc.AttentionCapacity > 0 && len(results) > perc.AttentionCapacity {
+		sort.Slice(results, func(i, j int) bool {
+			return results[i].Strength > results[j].Strength
+		})
+		results = results[:perc.AttentionCapacity]
+	}
+
+	return results
 }
 
 // Run 启动 Tick 循环（阻塞，直到 ctx 取消）

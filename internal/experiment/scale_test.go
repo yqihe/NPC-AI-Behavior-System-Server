@@ -23,7 +23,7 @@ func makeTestEvents() ([]*event.Event, map[string]*event.EventTypeConfig) {
 	evtType := &event.EventTypeConfig{Name: "test_explosion", DefaultSeverity: 80, DefaultTTL: 15, PerceptionMode: "auditory", Range: 500}
 	evtTypes := map[string]*event.EventTypeConfig{"test_explosion": evtType}
 	events := []*event.Event{
-		event.NewEvent(evtType, event.Vec3{X: 50}, "src", 80),
+		event.NewEvent(evtType, event.Vec3{X: 50}, "src", 80, ""),
 	}
 	return events, evtTypes
 }
@@ -164,7 +164,7 @@ func measureEventResponse(id string, cfg *experiment.ScaleConfig, btReg *bt.Regi
 		return -1
 	}
 
-	evt := event.NewEvent(evtType, event.Vec3{X: 50}, "src", 80)
+	evt := event.NewEvent(evtType, event.Vec3{X: 50}, "src", 80, "")
 	events := []*event.Event{evt}
 
 	return stableNsPerOp(npc, events, evtTypes, scaleIterations)

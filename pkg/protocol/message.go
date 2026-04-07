@@ -45,6 +45,7 @@ type PublishEventRequest struct {
 	Z         float64 `json:"z"`
 	Severity  float64 `json:"severity,omitempty"`  // 可选，0 则用默认值
 	SourceID  string  `json:"source_id,omitempty"` // 可选
+	ZoneID    string  `json:"zone_id,omitempty"`   // 可选，事件发生的区域 ID
 }
 
 // QueryNPCRequest 查询 NPC 状态

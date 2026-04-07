@@ -23,7 +23,7 @@ func TestAttack_Bus_MassivePublish(t *testing.T) {
 	bus := event.NewBus()
 	cfg := &event.EventTypeConfig{Name: "test", DefaultSeverity: 50, DefaultTTL: 5, PerceptionMode: "global", Range: 100}
 	for i := 0; i < 10000; i++ {
-		bus.Publish(event.NewEvent(cfg, event.Vec3{}, "", 0))
+		bus.Publish(event.NewEvent(cfg, event.Vec3{}, "", 0, ""))
 	}
 	if bus.ActiveCount() != 10000 {
 		t.Errorf("expected 10000, got %d", bus.ActiveCount())
@@ -37,7 +37,7 @@ func TestAttack_Bus_MassivePublish(t *testing.T) {
 func TestAttack_Bus_NegativeDT(t *testing.T) {
 	bus := event.NewBus()
 	cfg := &event.EventTypeConfig{Name: "test", DefaultSeverity: 50, DefaultTTL: 5, PerceptionMode: "global", Range: 100}
-	bus.Publish(event.NewEvent(cfg, event.Vec3{}, "", 0))
+	bus.Publish(event.NewEvent(cfg, event.Vec3{}, "", 0, ""))
 	// 负 dt 不应 panic，TTL 会增加
 	bus.Tick(-1.0)
 	if bus.ActiveCount() != 1 {
@@ -48,7 +48,7 @@ func TestAttack_Bus_NegativeDT(t *testing.T) {
 func TestAttack_Bus_ZeroDT(t *testing.T) {
 	bus := event.NewBus()
 	cfg := &event.EventTypeConfig{Name: "test", DefaultSeverity: 50, DefaultTTL: 5, PerceptionMode: "global", Range: 100}
-	bus.Publish(event.NewEvent(cfg, event.Vec3{}, "", 0))
+	bus.Publish(event.NewEvent(cfg, event.Vec3{}, "", 0, ""))
 	bus.Tick(0)
 	if bus.ActiveCount() != 1 {
 		t.Error("zero dt should not remove events")
@@ -64,7 +64,7 @@ func TestAttack_Bus_ConcurrentPublishAndTick(t *testing.T) {
 		wg.Add(3)
 		go func() {
 			defer wg.Done()
-			bus.Publish(event.NewEvent(cfg, event.Vec3{}, "", 0))
+			bus.Publish(event.NewEvent(cfg, event.Vec3{}, "", 0, ""))
 		}()
 		go func() {
 			defer wg.Done()
@@ -84,10 +84,10 @@ func TestAttack_Perception_ZeroRange(t *testing.T) {
 	cfg := &perception.PerceptionConfig{VisualRange: 0, AuditoryRange: 0}
 	evtCfg := &event.EventTypeConfig{PerceptionMode: "visual", Range: 100}
 	evt := &event.Event{Position: event.Vec3{0, 0, 0}}
-	// visual_range=0, min(0,100)=0, distance=0 → 0<=0 → true
+	// visual_range=0 → maxRange=0 → 无感知能力 → false（v3 行为变更：零范围=无感知）
 	result := perception.CanPerceive(event.Vec3{0, 0, 0}, cfg, evt, evtCfg)
-	if !result {
-		t.Error("zero range at zero distance should perceive")
+	if result {
+		t.Error("zero visual_range means no perception ability")
 	}
 }
 
@@ -118,7 +118,7 @@ func TestAttack_Decision_EmptyEvtTypes(t *testing.T) {
 	center := decision.NewCenter(10.0)
 	evt := &event.Event{ID: "e1", Type: "unknown", Position: event.Vec3{}, Severity: 80, TTL: 10}
 	// 空 evtTypes map
-	center.Evaluate(bb, event.Vec3{}, []*event.Event{evt}, map[string]*event.EventTypeConfig{}, 0.1)
+	center.Evaluate(bb, event.Vec3{}, []perception.PerceiveResult{{Event: evt, Strength: 80}}, map[string]*event.EventTypeConfig{}, 0.1)
 	// 不应 panic，不应写入 BB
 }
 
@@ -130,7 +130,7 @@ func TestAttack_Decision_ZeroSeverity(t *testing.T) {
 		"whisper": {Name: "whisper", Range: 100},
 	}
 	evt := &event.Event{ID: "e1", Type: "whisper", Position: event.Vec3{}, Severity: 0, TTL: 10}
-	center.Evaluate(bb, event.Vec3{}, []*event.Event{evt}, evtTypes, 0.1)
+	center.Evaluate(bb, event.Vec3{}, []perception.PerceiveResult{{Event: evt, Strength: 0}}, evtTypes, 0.1)
 
 	level, ok := blackboard.Get(bb, blackboard.KeyThreatLevel)
 	if ok && level > 0 {
@@ -147,7 +147,7 @@ func TestAttack_Decision_NegativeSeverity(t *testing.T) {
 	}
 	evt := &event.Event{ID: "e1", Type: "heal", Position: event.Vec3{}, Severity: -50, TTL: 10}
 	// 负 severity 不应 panic
-	center.Evaluate(bb, event.Vec3{}, []*event.Event{evt}, evtTypes, 0.1)
+	center.Evaluate(bb, event.Vec3{}, []perception.PerceiveResult{{Event: evt, Strength: -50}}, evtTypes, 0.1)
 }
 
 func TestAttack_Decision_MassiveDecay(t *testing.T) {
@@ -237,7 +237,7 @@ func TestAttack_Scheduler_RapidTicks(t *testing.T) {
 		reg.Add(inst)
 	}
 	explosionCfg := evtTypes["explosion"]
-	bus.Publish(event.NewEvent(explosionCfg, event.Vec3{50, 0, 0}, "bomb", 80))
+	bus.Publish(event.NewEvent(explosionCfg, event.Vec3{50, 0, 0}, "bomb", 80, ""))
 
 	center := decision.NewCenter(10.0)
 	scheduler := runtime.NewScheduler(bus, reg, center, evtTypes, 100*time.Millisecond)
@@ -253,7 +253,7 @@ func TestAttack_Scheduler_RapidTicks(t *testing.T) {
 func TestAttack_DuplicateEvents(t *testing.T) {
 	bus := event.NewBus()
 	cfg := &event.EventTypeConfig{Name: "test", DefaultSeverity: 50, DefaultTTL: 10, PerceptionMode: "global", Range: 100}
-	evt := event.NewEvent(cfg, event.Vec3{}, "", 0)
+	evt := event.NewEvent(cfg, event.Vec3{}, "", 0, "")
 	// 同一个 event 指针 Publish 两次
 	bus.Publish(evt)
 	bus.Publish(evt)

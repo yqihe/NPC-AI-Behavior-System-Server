@@ -79,7 +79,7 @@ func (r *Runner) RunMode(npc ExperimentNPC, name string) *ModeResult {
 				if !ok {
 					continue
 				}
-				activeEvents = append(activeEvents, event.NewEvent(typeCfg, se.Position, "scenario", se.Severity))
+				activeEvents = append(activeEvents, event.NewEvent(typeCfg, se.Position, "scenario", se.Severity, ""))
 				arrivedType = se.Type
 			}
 		}

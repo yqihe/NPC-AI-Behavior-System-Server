@@ -15,6 +15,20 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/perception"
 )
 
+// eventsToPerceived 将事件列表转换为 PerceiveResult（用 CalcThreat 计算强度）
+func eventsToPerceived(npcPos event.Vec3, events []*event.Event, evtTypes map[string]*event.EventTypeConfig) []perception.PerceiveResult {
+	results := make([]perception.PerceiveResult, 0, len(events))
+	for _, evt := range events {
+		typeCfg, ok := evtTypes[evt.Type]
+		if !ok {
+			continue
+		}
+		strength := decision.CalcThreat(evt.Severity, npcPos, evt.Position, typeCfg.Range)
+		results = append(results, perception.PerceiveResult{Event: evt, Strength: strength})
+	}
+	return results
+}
+
 func configsDir(t *testing.T) string {
 	t.Helper()
 	wd, err := os.Getwd()
@@ -79,7 +93,7 @@ func TestIntegration_Scenario1_CivilianFleeFromExplosion(t *testing.T) {
 
 	// 发布爆炸事件（距离 100，range 500）
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{100, 0, 0}, "bomb_1", 80)
+	evt := event.NewEvent(explosionCfg, event.Vec3{100, 0, 0}, "bomb_1", 80, "")
 
 	// 感知过滤
 	canPerceive := perception.CanPerceive(inst.Position, inst.Perception, evt, explosionCfg)
@@ -88,7 +102,7 @@ func TestIntegration_Scenario1_CivilianFleeFromExplosion(t *testing.T) {
 	}
 
 	// 决策中心评估
-	center.Evaluate(inst.BB, inst.Position, []*event.Event{evt}, evtTypes, 0.1)
+	center.Evaluate(inst.BB, inst.Position, eventsToPerceived(inst.Position, []*event.Event{evt}, evtTypes), evtTypes, 0.1)
 
 	// 检查 BB 被写入
 	level, _ := blackboard.Get(inst.BB, blackboard.KeyThreatLevel)
@@ -122,13 +136,13 @@ func TestIntegration_Scenario2_RecoverAfterEventExpires(t *testing.T) {
 
 	// 发布事件并驱动到 Flee
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{100, 0, 0}, "bomb_1", 80)
+	evt := event.NewEvent(explosionCfg, event.Vec3{100, 0, 0}, "bomb_1", 80, "")
 	bus := event.NewBus()
 	bus.Publish(evt)
 
 	// 感知 + 决策 + Tick → Alarmed → Flee
 	perceived := []*event.Event{evt}
-	center.Evaluate(inst.BB, inst.Position, perceived, evtTypes, 0.1)
+	center.Evaluate(inst.BB, inst.Position, eventsToPerceived(inst.Position, perceived, evtTypes), evtTypes, 0.1)
 	inst.Tick() // → Alarmed
 	inst.Tick() // → Flee
 
@@ -175,11 +189,11 @@ func TestIntegration_Scenario3_MultiEventPriority(t *testing.T) {
 	// 同时两个事件
 	gunshotCfg := evtTypes["gunshot"]
 	shoutCfg := evtTypes["shout"]
-	gunshotEvt := event.NewEvent(gunshotCfg, event.Vec3{50, 0, 0}, "shooter_1", 90)
-	shoutEvt := event.NewEvent(shoutCfg, event.Vec3{50, 0, 0}, "npc_2", 30)
+	gunshotEvt := event.NewEvent(gunshotCfg, event.Vec3{50, 0, 0}, "shooter_1", 90, "")
+	shoutEvt := event.NewEvent(shoutCfg, event.Vec3{50, 0, 0}, "npc_2", 30, "")
 
 	events := []*event.Event{shoutEvt, gunshotEvt} // shout 先，gunshot 后
-	center.Evaluate(inst.BB, inst.Position, events, evtTypes, 0.1)
+	center.Evaluate(inst.BB, inst.Position, eventsToPerceived(inst.Position, events, evtTypes), evtTypes, 0.1)
 
 	// 决策中心应选择 gunshot（更高威胁）
 	source, _ := blackboard.Get(inst.BB, blackboard.KeyThreatSource)
@@ -206,8 +220,8 @@ func TestIntegration_Scenario4_EventPreemption(t *testing.T) {
 
 	// t0: 低威胁事件（shout severity=30）
 	shoutCfg := evtTypes["shout"]
-	shoutEvt := event.NewEvent(shoutCfg, event.Vec3{50, 0, 0}, "npc_2", 30)
-	center.Evaluate(inst.BB, inst.Position, []*event.Event{shoutEvt}, evtTypes, 0.1)
+	shoutEvt := event.NewEvent(shoutCfg, event.Vec3{50, 0, 0}, "npc_2", 30, "")
+	center.Evaluate(inst.BB, inst.Position, eventsToPerceived(inst.Position, []*event.Event{shoutEvt}, evtTypes), evtTypes, 0.1)
 	inst.Tick() // → Alarmed（last_event_type != ""）
 
 	if inst.FSM.Current() != "Alarmed" {
@@ -222,7 +236,7 @@ func TestIntegration_Scenario4_EventPreemption(t *testing.T) {
 
 	// 模拟几个 Tick 在 Alarmed 状态
 	for i := 0; i < 3; i++ {
-		center.Evaluate(inst.BB, inst.Position, []*event.Event{shoutEvt}, evtTypes, 0.1)
+		center.Evaluate(inst.BB, inst.Position, eventsToPerceived(inst.Position, []*event.Event{shoutEvt}, evtTypes), evtTypes, 0.1)
 		inst.Tick()
 	}
 	if inst.FSM.Current() != "Alarmed" {
@@ -231,8 +245,8 @@ func TestIntegration_Scenario4_EventPreemption(t *testing.T) {
 
 	// t6: 高威胁事件到达（gunshot severity=90）
 	gunshotCfg := evtTypes["gunshot"]
-	gunshotEvt := event.NewEvent(gunshotCfg, event.Vec3{50, 0, 0}, "shooter_1", 90)
-	center.Evaluate(inst.BB, inst.Position, []*event.Event{shoutEvt, gunshotEvt}, evtTypes, 0.1)
+	gunshotEvt := event.NewEvent(gunshotCfg, event.Vec3{50, 0, 0}, "shooter_1", 90, "")
+	center.Evaluate(inst.BB, inst.Position, eventsToPerceived(inst.Position, []*event.Event{shoutEvt, gunshotEvt}, evtTypes), evtTypes, 0.1)
 
 	levelAfter, _ := blackboard.Get(inst.BB, blackboard.KeyThreatLevel)
 	if levelAfter < 50 {
@@ -268,7 +282,7 @@ func TestIntegration_Scenario5_NewEventTypeFromConfig(t *testing.T) {
 	blackboard.Set(inst.BB, blackboard.KeyCurrentTime, int64(10000))
 
 	// 发布 fire 事件
-	fireEvt := event.NewEvent(&fireConfig, event.Vec3{50, 0, 0}, "fire_1", 60)
+	fireEvt := event.NewEvent(&fireConfig, event.Vec3{50, 0, 0}, "fire_1", 60, "")
 
 	// 感知过滤：visual mode, distance=50, min(visual_range=200, range=150)=150 → 50<=150
 	canPerceive := perception.CanPerceive(inst.Position, inst.Perception, fireEvt, &fireConfig)
@@ -278,7 +292,7 @@ func TestIntegration_Scenario5_NewEventTypeFromConfig(t *testing.T) {
 
 	// 决策中心评估
 	center := decision.NewCenter(10.0)
-	center.Evaluate(inst.BB, inst.Position, []*event.Event{fireEvt}, evtTypes, 0.1)
+	center.Evaluate(inst.BB, inst.Position, eventsToPerceived(inst.Position, []*event.Event{fireEvt}, evtTypes), evtTypes, 0.1)
 
 	// 验证 BB 被写入
 	evtType, _ := blackboard.Get(inst.BB, blackboard.KeyLastEventType)
@@ -321,10 +335,10 @@ func TestIntegration_Scenario6_RuntimeCoreCrossLayer(t *testing.T) {
 
 	// 完整链路：事件 → 决策 → BB → FSM 转换 → BT 执行
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{50, 0, 0}, "bomb_1", 80)
+	evt := event.NewEvent(explosionCfg, event.Vec3{50, 0, 0}, "bomb_1", 80, "")
 
 	center := decision.NewCenter(10.0)
-	center.Evaluate(inst.BB, inst.Position, []*event.Event{evt}, evtTypes, 0.1)
+	center.Evaluate(inst.BB, inst.Position, eventsToPerceived(inst.Position, []*event.Event{evt}, evtTypes), evtTypes, 0.1)
 
 	// 验证 Rule.Evaluate（core 层）在 Runtime 调度下正确求值
 	// FSM 的转换条件是 Rule.Condition，由 BB 值驱动

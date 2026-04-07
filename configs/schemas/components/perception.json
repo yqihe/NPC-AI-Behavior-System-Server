@@ -1,0 +1,33 @@
+{
+  "component": "perception",
+  "display_name": "感知组件",
+  "blackboard_keys": [],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["visual_range", "auditory_range"],
+    "properties": {
+      "visual_range": {
+        "type": "number",
+        "title": "视觉感知距离",
+        "description": "NPC 视觉感知的最大距离（米）",
+        "minimum": 0,
+        "default": 200
+      },
+      "auditory_range": {
+        "type": "number",
+        "title": "听觉感知距离",
+        "description": "NPC 听觉感知的最大距离（米）",
+        "minimum": 0,
+        "default": 500
+      },
+      "attention_capacity": {
+        "type": "integer",
+        "title": "注意力容量",
+        "description": "NPC 最多同时关注的事件数量，超出时只保留最高优先级",
+        "minimum": 1,
+        "default": 5
+      }
+    }
+  }
+}

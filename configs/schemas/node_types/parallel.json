@@ -1,0 +1,18 @@
+{
+  "node_type": "parallel",
+  "display_name": "并行节点",
+  "category": "composite",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "policy": {
+        "type": "string",
+        "title": "判定策略",
+        "description": "require_all=全部成功才成功，require_one=任一成功即成功",
+        "enum": ["require_all", "require_one"],
+        "default": "require_all"
+      }
+    }
+  }
+}

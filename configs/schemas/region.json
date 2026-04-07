@@ -1,0 +1,151 @@
+{
+  "display_name": "区域配置",
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["region_id", "name", "region_type", "boundary", "spawn_table"],
+    "properties": {
+      "region_id": {
+        "type": "string",
+        "title": "区域 ID",
+        "minLength": 1
+      },
+      "name": {
+        "type": "string",
+        "title": "区域名称",
+        "minLength": 1
+      },
+      "description": {
+        "type": "string",
+        "title": "区域描述"
+      },
+      "region_type": {
+        "type": "string",
+        "title": "区域类型",
+        "enum": ["wilderness", "town", "dungeon"]
+      },
+      "boundary": {
+        "type": "object",
+        "title": "区域边界",
+        "required": ["type", "points"],
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "polygon"
+          },
+          "points": {
+            "type": "array",
+            "title": "边界顶点",
+            "description": "多边形顶点坐标列表，按顺序连接",
+            "items": {
+              "type": "object",
+              "required": ["x", "z"],
+              "properties": {
+                "x": { "type": "number" },
+                "z": { "type": "number" }
+              }
+            },
+            "minItems": 3
+          }
+        }
+      },
+      "weather": {
+        "type": "object",
+        "title": "天气配置",
+        "properties": {
+          "default": {
+            "type": "string",
+            "title": "默认天气"
+          },
+          "cycle": {
+            "type": "array",
+            "title": "天气循环",
+            "items": {
+              "type": "object",
+              "required": ["type", "weight"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "title": "天气类型"
+                },
+                "weight": {
+                  "type": "number",
+                  "title": "权重",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              }
+            }
+          }
+        }
+      },
+      "spawn_table": {
+        "type": "array",
+        "title": "刷怪表",
+        "items": {
+          "type": "object",
+          "required": ["template_ref", "count", "spawn_points"],
+          "properties": {
+            "template_ref": {
+              "type": "string",
+              "title": "NPC 模板名",
+              "description": "引用 npc_templates 中的模板名称",
+              "minLength": 1
+            },
+            "count": {
+              "type": "integer",
+              "title": "数量",
+              "minimum": 1
+            },
+            "spawn_points": {
+              "type": "array",
+              "title": "出生点",
+              "items": {
+                "type": "object",
+                "required": ["x", "z"],
+                "properties": {
+                  "x": { "type": "number" },
+                  "z": { "type": "number" }
+                }
+              },
+              "minItems": 1
+            },
+            "wander_radius": {
+              "type": "number",
+              "title": "游荡半径",
+              "description": "NPC 在出生点附近的活动半径（米）",
+              "minimum": 0,
+              "default": 50
+            },
+            "respawn_seconds": {
+              "type": "number",
+              "title": "刷新间隔",
+              "description": "NPC 消失后重新生成的等待时间（秒）",
+              "minimum": 0,
+              "default": 120
+            }
+          }
+        }
+      },
+      "properties": {
+        "type": "object",
+        "title": "扩展属性",
+        "description": "区域自定义属性，如等级范围、背景音乐等",
+        "properties": {
+          "level_range": {
+            "type": "object",
+            "properties": {
+              "min": { "type": "integer", "minimum": 0 },
+              "max": { "type": "integer", "minimum": 0 }
+            }
+          },
+          "bgm": {
+            "type": "string",
+            "title": "背景音乐"
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  }
+}

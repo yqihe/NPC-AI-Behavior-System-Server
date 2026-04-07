@@ -1,0 +1,8 @@
+{
+  "preset": "simple",
+  "display_name": "简单型",
+  "description": "环境装饰型 NPC，只有基础身份、位置和移动能力，无 AI 行为",
+  "required_components": ["identity", "position"],
+  "default_components": ["movement"],
+  "optional_components": ["behavior", "perception", "personality", "needs", "emotion", "memory", "social"]
+}

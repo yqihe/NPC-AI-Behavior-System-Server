@@ -1,0 +1,27 @@
+{
+  "node_type": "check_bb_string",
+  "display_name": "检查黑板字符串值",
+  "category": "leaf",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["key", "op", "value"],
+    "properties": {
+      "key": {
+        "type": "string",
+        "title": "黑板 Key",
+        "description": "要检查的 Blackboard Key 名称",
+        "minLength": 1
+      },
+      "op": {
+        "type": "string",
+        "title": "比较操作符",
+        "enum": ["==", "!="]
+      },
+      "value": {
+        "type": "string",
+        "title": "比较值"
+      }
+    }
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "node_type": "stub_action",
+  "display_name": "占位行为",
+  "category": "leaf",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["name"],
+    "properties": {
+      "name": {
+        "type": "string",
+        "title": "行为名称",
+        "description": "占位行为的标识名，用于日志和调试",
+        "minLength": 1
+      },
+      "result": {
+        "type": "string",
+        "title": "返回状态",
+        "description": "该节点固定返回的状态",
+        "enum": ["success", "failure", "running"],
+        "default": "success"
+      }
+    }
+  }
+}

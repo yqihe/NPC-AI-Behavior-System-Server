@@ -1,0 +1,10 @@
+{
+  "node_type": "sequence",
+  "display_name": "顺序节点",
+  "category": "composite",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "description": "无参数，子节点通过 children 字段定义"
+  }
+}

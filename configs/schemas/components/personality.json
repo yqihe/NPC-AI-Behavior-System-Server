@@ -1,0 +1,76 @@
+{
+  "component": "personality",
+  "display_name": "性格组件",
+  "blackboard_keys": [],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["personality_type", "decision_weights"],
+    "properties": {
+      "personality_type": {
+        "type": "string",
+        "title": "性格类型",
+        "description": "timid=胆小(容易逃跑), aggressive=好战(主动攻击), docile=温顺(不主动反应), curious=好奇(主动探索)",
+        "enum": ["timid", "aggressive", "docile", "curious"]
+      },
+      "decision_weights": {
+        "type": "object",
+        "title": "决策权重",
+        "description": "决策中心对各维度的加权系数，三项之和建议为 1.0",
+        "required": ["threat", "needs", "emotion"],
+        "properties": {
+          "threat": {
+            "type": "number",
+            "title": "威胁权重",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.5
+          },
+          "needs": {
+            "type": "number",
+            "title": "需求权重",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.3
+          },
+          "emotion": {
+            "type": "number",
+            "title": "情绪权重",
+            "minimum": 0,
+            "maximum": 1,
+            "default": 0.2
+          }
+        }
+      },
+      "aggro_range": {
+        "type": "number",
+        "title": "主动攻击距离",
+        "description": "仅 aggressive 性格有效：主动攻击目标的最大距离（米）",
+        "minimum": 0
+      },
+      "flee_threshold": {
+        "type": "number",
+        "title": "逃跑阈值",
+        "description": "仅 timid 性格有效：威胁等级超过此值时触发逃跑",
+        "minimum": 0,
+        "maximum": 100
+      }
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": { "personality_type": { "const": "aggressive" } },
+          "required": ["personality_type"]
+        },
+        "then": { "required": ["aggro_range"] }
+      },
+      {
+        "if": {
+          "properties": { "personality_type": { "const": "timid" } },
+          "required": ["personality_type"]
+        },
+        "then": { "required": ["flee_threshold"] }
+      }
+    ]
+  }
+}

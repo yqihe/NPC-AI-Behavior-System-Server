@@ -1,0 +1,36 @@
+{
+  "condition_type": "leaf",
+  "display_name": "条件叶节点",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["key", "op"],
+    "properties": {
+      "key": {
+        "type": "string",
+        "title": "黑板 Key",
+        "description": "要比较的 Blackboard Key 名称",
+        "minLength": 1
+      },
+      "op": {
+        "type": "string",
+        "title": "操作符",
+        "description": "比较操作符",
+        "enum": ["==", "!=", ">", ">=", "<", "<=", "in"]
+      },
+      "value": {
+        "title": "比较值（字面量）",
+        "description": "与 key 的值进行比较的字面量，与 ref_key 二选一"
+      },
+      "ref_key": {
+        "type": "string",
+        "title": "引用 Key",
+        "description": "引用另一个 Blackboard Key 的值作为比较目标，与 value 二选一"
+      }
+    },
+    "oneOf": [
+      { "required": ["value"] },
+      { "required": ["ref_key"] }
+    ]
+  }
+}

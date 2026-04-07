@@ -1,0 +1,8 @@
+{
+  "preset": "autonomous",
+  "display_name": "自主型",
+  "description": "有自主需求、情绪和记忆的 NPC，能产生自驱动行为（觅食、休息、探索）",
+  "required_components": ["identity", "position"],
+  "default_components": ["behavior", "perception", "movement", "personality", "needs", "emotion", "memory"],
+  "optional_components": ["social"]
+}

@@ -1,0 +1,61 @@
+{
+  "component": "movement",
+  "display_name": "移动组件",
+  "blackboard_keys": ["move_state", "npc_pos_x", "npc_pos_z"],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["move_type", "move_speed"],
+    "properties": {
+      "move_type": {
+        "type": "string",
+        "title": "移动模式",
+        "description": "wander=在出生点附近随机游荡，patrol=按路点巡逻，follow=跟随目标",
+        "enum": ["wander", "patrol", "follow"]
+      },
+      "move_speed": {
+        "type": "number",
+        "title": "移动速度",
+        "description": "每秒移动的距离（米/秒）",
+        "minimum": 0,
+        "default": 3.0
+      },
+      "wander_radius": {
+        "type": "number",
+        "title": "游荡半径",
+        "description": "以出生点为圆心的最大游荡距离（米），仅 wander 模式有效",
+        "minimum": 0
+      },
+      "patrol_waypoints": {
+        "type": "array",
+        "title": "巡逻路点",
+        "description": "巡逻路线的路点列表，NPC 按顺序循环巡逻，仅 patrol 模式有效",
+        "items": {
+          "type": "object",
+          "required": ["x", "z"],
+          "properties": {
+            "x": { "type": "number", "title": "路点 X" },
+            "z": { "type": "number", "title": "路点 Z" }
+          }
+        },
+        "minItems": 1
+      }
+    },
+    "allOf": [
+      {
+        "if": {
+          "properties": { "move_type": { "const": "wander" } },
+          "required": ["move_type"]
+        },
+        "then": { "required": ["wander_radius"] }
+      },
+      {
+        "if": {
+          "properties": { "move_type": { "const": "patrol" } },
+          "required": ["move_type"]
+        },
+        "then": { "required": ["patrol_waypoints"] }
+      }
+    ]
+  }
+}

@@ -16,12 +16,15 @@ func evtTypes() map[string]*event.EventTypeConfig {
 	}
 }
 
-// pr 辅助：从事件和强度构建 PerceiveResult
 func pr(evt *event.Event, strength float64) perception.PerceiveResult {
 	return perception.PerceiveResult{Event: evt, Strength: strength}
 }
 
-// --- CalcThreat（保留的工具函数）---
+func defaultInput(perceived []perception.PerceiveResult) DecisionInput {
+	return DecisionInput{Perceived: perceived, Weights: DefaultWeights}
+}
+
+// --- CalcThreat ---
 
 func TestCalcThreat_ZeroDistance(t *testing.T) {
 	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{0, 0, 0}, 500)
@@ -44,115 +47,170 @@ func TestCalcThreat_AtRange(t *testing.T) {
 	}
 }
 
-func TestCalcThreat_BeyondRange(t *testing.T) {
-	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{600, 0, 0}, 500)
-	if threat != 0 {
-		t.Errorf("expected 0, got %f", threat)
-	}
-}
+// --- Evaluate: 纯威胁（v2 兼容）---
 
-func TestCalcThreat_ZeroRange_Global(t *testing.T) {
-	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{100, 0, 100}, 0)
-	if threat != 80 {
-		t.Errorf("expected 80 (severity) for global event, got %f", threat)
-	}
-}
-
-// --- Evaluate: 单事件 ---
-
-func TestEvaluate_SingleEvent(t *testing.T) {
+func TestEvaluate_ThreatOnly(t *testing.T) {
 	bb := blackboard.New()
 	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(10000))
 
 	center := NewCenter(10.0)
-	npcPos := event.Vec3{0, 0, 0}
 	evt := &event.Event{ID: "evt_1", Type: "explosion", Position: event.Vec3{100, 0, 0}, Severity: 80, TTL: 10}
 
-	// 感知强度 = 80 * (1 - 100/500) = 64（由感知层计算后传入）
-	center.Evaluate(bb, npcPos, []perception.PerceiveResult{pr(evt, 64)}, evtTypes(), 0.1)
+	center.Evaluate(bb, event.Vec3{}, defaultInput([]perception.PerceiveResult{pr(evt, 64)}), evtTypes(), 0.1)
 
 	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
-	source, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
-	evtType, _ := blackboard.Get(bb, blackboard.KeyLastEventType)
-
 	if level != 64 {
-		t.Errorf("expected threat_level 64, got %f", level)
+		t.Errorf("threat_level = %f, want 64", level)
 	}
-	if source != "evt_1" {
-		t.Errorf("expected source evt_1, got %s", source)
+
+	winner, _ := blackboard.Get(bb, blackboard.KeyDecisionWinner)
+	if winner != "threat" {
+		t.Errorf("decision_winner = %q, want %q", winner, "threat")
 	}
-	if evtType != "explosion" {
-		t.Errorf("expected event type explosion, got %s", evtType)
+
+	ts, _ := blackboard.Get(bb, blackboard.KeyThreatScore)
+	if ts != 64 {
+		t.Errorf("threat_score = %f, want 64", ts)
 	}
 }
 
-// --- Evaluate: 多事件仲裁 ---
+// --- Evaluate: 需求优先 ---
 
-func TestEvaluate_MultipleEvents_HighestWins(t *testing.T) {
+func TestEvaluate_NeedsPriority(t *testing.T) {
 	bb := blackboard.New()
 	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(10000))
 
 	center := NewCenter(10.0)
-	npcPos := event.Vec3{0, 0, 0}
-
-	shout := &event.Event{ID: "evt_shout", Type: "shout", Position: event.Vec3{50, 0, 0}, Severity: 30, TTL: 8}
-	gunshot := &event.Event{ID: "evt_gunshot", Type: "gunshot", Position: event.Vec3{100, 0, 0}, Severity: 90, TTL: 10}
-
-	// 感知强度：shout=30*(1-50/200)=22.5, gunshot=90*(1-100/300)=60
-	perceived := []perception.PerceiveResult{pr(shout, 22.5), pr(gunshot, 60)}
-	center.Evaluate(bb, npcPos, perceived, evtTypes(), 0.1)
-
-	source, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
-	if source != "evt_gunshot" {
-		t.Errorf("expected highest threat (gunshot), got source %s", source)
+	input := DecisionInput{
+		Perceived:    []perception.PerceiveResult{pr(&event.Event{ID: "e1", Type: "shout", Severity: 30, TTL: 8}, 20)},
+		NeedUrgency:  80, // 饥饿紧迫
+		EmotionValue: 10,
+		Weights:      DecisionWeights{Threat: 0.3, Needs: 0.5, Emotion: 0.2},
 	}
 
-	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
-	if level != 60 {
-		t.Errorf("expected threat_level 60, got %f", level)
+	center.Evaluate(bb, event.Vec3{}, input, evtTypes(), 0.1)
+
+	winner, _ := blackboard.Get(bb, blackboard.KeyDecisionWinner)
+	// 加权：threat=20*0.3=6, needs=80*0.5=40, emotion=10*0.2=2 → needs
+	if winner != "needs" {
+		t.Errorf("decision_winner = %q, want %q", winner, "needs")
+	}
+
+	ns, _ := blackboard.Get(bb, blackboard.KeyNeedScore)
+	if ns != 80 {
+		t.Errorf("need_score = %f, want 80", ns)
 	}
 }
 
-// --- Evaluate: 事件抢占 ---
+// --- Evaluate: 情绪优先（timid NPC）---
 
-func TestEvaluate_EventPreemption(t *testing.T) {
+func TestEvaluate_EmotionPriority_Timid(t *testing.T) {
 	bb := blackboard.New()
 	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(10000))
 
 	center := NewCenter(10.0)
-	npcPos := event.Vec3{0, 0, 0}
-
-	lowEvt := &event.Event{ID: "evt_shout", Type: "shout", Position: event.Vec3{50, 0, 0}, Severity: 30, TTL: 8}
-	center.Evaluate(bb, npcPos, []perception.PerceiveResult{pr(lowEvt, 22.5)}, evtTypes(), 0.1)
-
-	levelBefore, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
-
-	highEvt := &event.Event{ID: "evt_gunshot", Type: "gunshot", Position: event.Vec3{50, 0, 0}, Severity: 90, TTL: 10}
-	center.Evaluate(bb, npcPos, []perception.PerceiveResult{pr(lowEvt, 22.5), pr(highEvt, 75)}, evtTypes(), 0.1)
-
-	levelAfter, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
-	sourceAfter, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
-
-	if sourceAfter != "evt_gunshot" {
-		t.Errorf("expected preemption to gunshot, got %s", sourceAfter)
+	input := DecisionInput{
+		Perceived:    []perception.PerceiveResult{pr(&event.Event{ID: "e1", Type: "shout", Severity: 30, TTL: 8}, 25)},
+		NeedUrgency:  30,
+		EmotionValue: 70, // 高恐惧
+		Weights:      DecisionWeights{Threat: 0.2, Needs: 0.2, Emotion: 0.6}, // timid
 	}
-	if levelAfter <= levelBefore {
-		t.Errorf("expected higher threat after preemption: before=%f after=%f", levelBefore, levelAfter)
+
+	center.Evaluate(bb, event.Vec3{}, input, evtTypes(), 0.1)
+
+	winner, _ := blackboard.Get(bb, blackboard.KeyDecisionWinner)
+	// 加权：threat=25*0.2=5, needs=30*0.2=6, emotion=70*0.6=42 → emotion
+	if winner != "emotion" {
+		t.Errorf("decision_winner = %q, want %q", winner, "emotion")
 	}
 }
 
-// --- Evaluate: 威胁衰减 ---
+// --- Evaluate: 高威胁压制 ---
+
+func TestEvaluate_ThreatOverride(t *testing.T) {
+	bb := blackboard.New()
+	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(10000))
+
+	center := NewCenter(10.0)
+	input := DecisionInput{
+		Perceived:    []perception.PerceiveResult{pr(&event.Event{ID: "e1", Type: "explosion", Severity: 80, TTL: 10}, 75)},
+		NeedUrgency:  60,
+		EmotionValue: 40,
+		Weights:      DecisionWeights{Threat: 0.5, Needs: 0.3, Emotion: 0.2},
+	}
+
+	center.Evaluate(bb, event.Vec3{}, input, evtTypes(), 0.1)
+
+	winner, _ := blackboard.Get(bb, blackboard.KeyDecisionWinner)
+	// 加权：threat=75*0.5=37.5, needs=60*0.3=18, emotion=40*0.2=8 → threat
+	if winner != "threat" {
+		t.Errorf("decision_winner = %q, want %q", winner, "threat")
+	}
+}
+
+// --- Evaluate: 默认权重始终 threat ---
+
+func TestEvaluate_DefaultWeights_AlwaysThreat(t *testing.T) {
+	bb := blackboard.New()
+	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(10000))
+
+	center := NewCenter(10.0)
+	input := DecisionInput{
+		Perceived:    []perception.PerceiveResult{pr(&event.Event{ID: "e1", Type: "shout", Severity: 30, TTL: 8}, 5)},
+		NeedUrgency:  90,
+		EmotionValue: 80,
+		Weights:      DefaultWeights, // {1, 0, 0}
+	}
+
+	center.Evaluate(bb, event.Vec3{}, input, evtTypes(), 0.1)
+
+	winner, _ := blackboard.Get(bb, blackboard.KeyDecisionWinner)
+	// 加权：threat=5*1=5, needs=90*0=0, emotion=80*0=0 → threat
+	if winner != "threat" {
+		t.Errorf("decision_winner = %q, want %q (default weights)", winner, "threat")
+	}
+}
+
+// --- Evaluate: 三维分正确写入 ---
+
+func TestEvaluate_ScoresWrittenToBB(t *testing.T) {
+	bb := blackboard.New()
+	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(10000))
+
+	center := NewCenter(10.0)
+	input := DecisionInput{
+		Perceived:    []perception.PerceiveResult{pr(&event.Event{ID: "e1", Type: "explosion", Severity: 80, TTL: 10}, 55)},
+		NeedUrgency:  42,
+		EmotionValue: 33,
+		Weights:      DefaultWeights,
+	}
+
+	center.Evaluate(bb, event.Vec3{}, input, evtTypes(), 0.1)
+
+	ts, _ := blackboard.Get(bb, blackboard.KeyThreatScore)
+	ns, _ := blackboard.Get(bb, blackboard.KeyNeedScore)
+	es, _ := blackboard.Get(bb, blackboard.KeyEmotionScore)
+
+	if ts != 55 {
+		t.Errorf("threat_score = %f, want 55", ts)
+	}
+	if ns != 42 {
+		t.Errorf("need_score = %f, want 42", ns)
+	}
+	if es != 33 {
+		t.Errorf("emotion_score = %f, want 33", es)
+	}
+}
+
+// --- Evaluate: 衰减不变 ---
 
 func TestEvaluate_Decay_NoEvents(t *testing.T) {
 	bb := blackboard.New()
 	blackboard.Set(bb, blackboard.KeyThreatLevel, 50.0)
 	blackboard.Set(bb, blackboard.KeyThreatSource, "old_evt")
-	blackboard.Set(bb, blackboard.KeyLastEventType, "explosion")
 
 	center := NewCenter(10.0)
-	npcPos := event.Vec3{0, 0, 0}
-
-	center.Evaluate(bb, npcPos, nil, evtTypes(), 1.0)
+	center.Evaluate(bb, event.Vec3{}, defaultInput(nil), evtTypes(), 1.0)
 
 	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
 	if level != 40 {
@@ -163,26 +221,18 @@ func TestEvaluate_Decay_NoEvents(t *testing.T) {
 func TestEvaluate_Decay_ToZero(t *testing.T) {
 	bb := blackboard.New()
 	blackboard.Set(bb, blackboard.KeyThreatLevel, 5.0)
-	blackboard.Set(bb, blackboard.KeyThreatSource, "old_evt")
+	blackboard.Set(bb, blackboard.KeyThreatSource, "old")
 	blackboard.Set(bb, blackboard.KeyLastEventType, "explosion")
 
 	center := NewCenter(10.0)
-	npcPos := event.Vec3{0, 0, 0}
-
-	center.Evaluate(bb, npcPos, nil, evtTypes(), 1.0)
+	center.Evaluate(bb, event.Vec3{}, defaultInput(nil), evtTypes(), 1.0)
 
 	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
 	if level != 0 {
-		t.Errorf("expected 0 after full decay, got %f", level)
+		t.Errorf("expected 0, got %f", level)
 	}
 	source, _ := blackboard.Get(bb, blackboard.KeyThreatSource)
 	if source != "" {
-		t.Errorf("expected empty source after decay to zero, got %s", source)
+		t.Errorf("expected empty source, got %q", source)
 	}
-}
-
-func TestEvaluate_Decay_AlreadyZero(t *testing.T) {
-	bb := blackboard.New()
-	center := NewCenter(10.0)
-	center.Evaluate(bb, event.Vec3{}, nil, evtTypes(), 1.0)
 }

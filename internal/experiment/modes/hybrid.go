@@ -65,7 +65,7 @@ func NewHybridFromScale(id string, cfg *experiment.ScaleConfig, btReg *bt.Regist
 
 func (h *HybridNPC) Tick(events []*event.Event, evtTypes map[string]*event.EventTypeConfig, dt float64) string {
 	perceived := filterPerceived(h.inst.Position, h.inst.Perception, events, evtTypes)
-	h.decision.Evaluate(h.inst.BB, h.inst.Position, perceived, evtTypes, dt)
+	h.decision.Evaluate(h.inst.BB, h.inst.Position, decision.DecisionInput{Perceived: perceived, Weights: decision.DefaultWeights}, evtTypes, dt)
 	h.inst.Tick()
 	return h.inst.FSM.Current()
 }

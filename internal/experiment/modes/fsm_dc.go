@@ -50,7 +50,7 @@ func NewFSMDCFromScale(id string, cfg *experiment.ScaleConfig) (*FSMDCNPC, error
 
 func (n *FSMDCNPC) Tick(events []*event.Event, evtTypes map[string]*event.EventTypeConfig, dt float64) string {
 	perceived := filterPerceived(n.position, n.percCfg, events, evtTypes)
-	n.decision.Evaluate(n.bb, n.position, perceived, evtTypes, dt)
+	n.decision.Evaluate(n.bb, n.position, decision.DecisionInput{Perceived: perceived, Weights: decision.DefaultWeights}, evtTypes, dt)
 	n.fsm.Tick(n.bb)
 	return n.fsm.Current()
 }

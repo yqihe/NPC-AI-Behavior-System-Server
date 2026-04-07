@@ -118,7 +118,7 @@ func TestAttack_Decision_EmptyEvtTypes(t *testing.T) {
 	center := decision.NewCenter(10.0)
 	evt := &event.Event{ID: "e1", Type: "unknown", Position: event.Vec3{}, Severity: 80, TTL: 10}
 	// 空 evtTypes map
-	center.Evaluate(bb, event.Vec3{}, []perception.PerceiveResult{{Event: evt, Strength: 80}}, map[string]*event.EventTypeConfig{}, 0.1)
+	center.Evaluate(bb, event.Vec3{}, decision.DecisionInput{Perceived: []perception.PerceiveResult{{Event: evt, Strength: 80}}, Weights: decision.DefaultWeights}, map[string]*event.EventTypeConfig{}, 0.1)
 	// 不应 panic，不应写入 BB
 }
 
@@ -130,7 +130,7 @@ func TestAttack_Decision_ZeroSeverity(t *testing.T) {
 		"whisper": {Name: "whisper", Range: 100},
 	}
 	evt := &event.Event{ID: "e1", Type: "whisper", Position: event.Vec3{}, Severity: 0, TTL: 10}
-	center.Evaluate(bb, event.Vec3{}, []perception.PerceiveResult{{Event: evt, Strength: 0}}, evtTypes, 0.1)
+	center.Evaluate(bb, event.Vec3{}, decision.DecisionInput{Perceived: []perception.PerceiveResult{{Event: evt, Strength: 0}}, Weights: decision.DefaultWeights}, evtTypes, 0.1)
 
 	level, ok := blackboard.Get(bb, blackboard.KeyThreatLevel)
 	if ok && level > 0 {
@@ -147,7 +147,7 @@ func TestAttack_Decision_NegativeSeverity(t *testing.T) {
 	}
 	evt := &event.Event{ID: "e1", Type: "heal", Position: event.Vec3{}, Severity: -50, TTL: 10}
 	// 负 severity 不应 panic
-	center.Evaluate(bb, event.Vec3{}, []perception.PerceiveResult{{Event: evt, Strength: -50}}, evtTypes, 0.1)
+	center.Evaluate(bb, event.Vec3{}, decision.DecisionInput{Perceived: []perception.PerceiveResult{{Event: evt, Strength: -50}}, Weights: decision.DefaultWeights}, evtTypes, 0.1)
 }
 
 func TestAttack_Decision_MassiveDecay(t *testing.T) {
@@ -156,7 +156,7 @@ func TestAttack_Decision_MassiveDecay(t *testing.T) {
 	blackboard.Set(bb, blackboard.KeyThreatSource, "old")
 	blackboard.Set(bb, blackboard.KeyLastEventType, "old")
 	center := decision.NewCenter(1e6) // 极高衰减率
-	center.Evaluate(bb, event.Vec3{}, nil, nil, 1.0)
+	center.Evaluate(bb, event.Vec3{}, decision.DecisionInput{Weights: decision.DefaultWeights}, nil, 1.0)
 
 	level, _ := blackboard.Get(bb, blackboard.KeyThreatLevel)
 	if level != 0 {

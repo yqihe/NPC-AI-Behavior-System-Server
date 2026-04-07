@@ -210,6 +210,7 @@ func TestNodeTypeSchemas(t *testing.T) {
 	expectedTypes := []string{
 		"sequence", "selector", "parallel", "inverter",
 		"check_bb_float", "check_bb_string", "set_bb_value", "stub_action",
+		"move_to", "flee_from",
 	}
 
 	schemaTypes := make(map[string]bool)

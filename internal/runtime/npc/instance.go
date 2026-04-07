@@ -126,6 +126,23 @@ func (inst *Instance) TickComponents(dt float64) {
 	}
 }
 
+// SyncPosition 从 BB 同步位置到 Instance.Position 和 PositionComponent
+func (inst *Instance) SyncPosition() {
+	x, okX := blackboard.Get(inst.BB, blackboard.KeyNPCPosX)
+	z, okZ := blackboard.Get(inst.BB, blackboard.KeyNPCPosZ)
+	if !okX || !okZ {
+		return
+	}
+	inst.Position.X = x
+	inst.Position.Z = z
+	if pos, ok := inst.RawComponent("position"); ok {
+		if p, ok := pos.(*component.PositionComponent); ok {
+			p.X = x
+			p.Z = z
+		}
+	}
+}
+
 // GetComponent 类型安全获取组件
 func GetComponent[T component.Component](inst *Instance, name string) (T, bool) {
 	var zero T

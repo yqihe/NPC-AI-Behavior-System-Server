@@ -1,0 +1,50 @@
+{
+  "name": "wolf_common",
+  "preset": "reactive",
+  "components": {
+    "identity": {
+      "name": "灰狼",
+      "model_id": "wolf_gray",
+      "tags": ["predator"]
+    },
+    "position": {
+      "x": 300,
+      "y": 0,
+      "z": 400,
+      "orientation": 90,
+      "zone_id": "forest"
+    },
+    "behavior": {
+      "fsm_ref": "civilian",
+      "bt_refs": {
+        "Idle": "civilian/idle",
+        "Alarmed": "civilian/alarmed",
+        "Flee": "civilian/flee",
+        "Cower": "civilian/cower"
+      }
+    },
+    "perception": {
+      "visual_range": 150,
+      "auditory_range": 300,
+      "attention_capacity": 3
+    },
+    "movement": {
+      "move_type": "patrol",
+      "move_speed": 4.0,
+      "patrol_waypoints": [
+        {"x": 300, "z": 400},
+        {"x": 350, "z": 450},
+        {"x": 280, "z": 420}
+      ]
+    },
+    "personality": {
+      "personality_type": "aggressive",
+      "decision_weights": {
+        "threat": 0.7,
+        "needs": 0.2,
+        "emotion": 0.1
+      },
+      "aggro_range": 80
+    }
+  }
+}

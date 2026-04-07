@@ -28,29 +28,33 @@ type httpConfigResponse struct {
 
 // HTTPSource 从 ADMIN 平台 HTTP API 加载配置，启动时全量拉取到内存
 type HTTPSource struct {
-	npcTypes   map[string][]byte // name → raw JSON
-	fsmConfigs map[string][]byte // name → raw JSON
-	btTrees    map[string][]byte // name → raw JSON
-	eventTypes map[string][]byte // name → raw JSON
+	npcTypes     map[string][]byte // name → raw JSON（v2 兼容）
+	npcTemplates map[string][]byte // name → raw JSON（v3 组件化）
+	fsmConfigs   map[string][]byte // name → raw JSON
+	btTrees      map[string][]byte // name → raw JSON
+	eventTypes   map[string][]byte // name → raw JSON
 }
 
 // NewHTTPSource 从 ADMIN 平台全量拉取配置到内存
 func NewHTTPSource(ctx context.Context, baseURL string) (*HTTPSource, error) {
 	s := &HTTPSource{
-		npcTypes:   make(map[string][]byte),
-		fsmConfigs: make(map[string][]byte),
-		btTrees:    make(map[string][]byte),
-		eventTypes: make(map[string][]byte),
+		npcTypes:     make(map[string][]byte),
+		npcTemplates: make(map[string][]byte),
+		fsmConfigs:   make(map[string][]byte),
+		btTrees:      make(map[string][]byte),
+		eventTypes:   make(map[string][]byte),
 	}
 
 	endpoints := []struct {
-		path   string
-		target map[string][]byte
+		path     string
+		target   map[string][]byte
+		optional bool // optional 端点失败时不报错（ADMIN 可能尚未实现）
 	}{
-		{"/api/configs/event_types", s.eventTypes},
-		{"/api/configs/npc_types", s.npcTypes},
-		{"/api/configs/fsm_configs", s.fsmConfigs},
-		{"/api/configs/bt_trees", s.btTrees},
+		{"/api/configs/event_types", s.eventTypes, false},
+		{"/api/configs/npc_types", s.npcTypes, false},
+		{"/api/configs/fsm_configs", s.fsmConfigs, false},
+		{"/api/configs/bt_trees", s.btTrees, false},
+		{"/api/v1/npc-templates/export", s.npcTemplates, true},
 	}
 
 	client := &http.Client{}
@@ -58,6 +62,10 @@ func NewHTTPSource(ctx context.Context, baseURL string) (*HTTPSource, error) {
 	for _, ep := range endpoints {
 		url := baseURL + ep.path
 		if err := fetchEndpoint(ctx, client, url, ep.target); err != nil {
+			if ep.optional {
+				slog.Warn("config.http.optional_endpoint_skipped", "endpoint", ep.path, "err", err)
+				continue
+			}
 			return nil, err
 		}
 		slog.Info("config.http.loaded", "endpoint", ep.path, "count", len(ep.target))
@@ -152,6 +160,17 @@ func (s *HTTPSource) LoadAllEventConfigs() (map[string][]byte, error) {
 		result[name] = data
 	}
 	return result, nil
+}
+
+func (s *HTTPSource) LoadNPCTemplate(name string) ([]byte, error) {
+	data, ok := s.npcTemplates[name]
+	if !ok {
+		return nil, fmt.Errorf("config: NPC template %q not found via ADMIN API", name)
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("config: NPC template %q is not valid JSON", name)
+	}
+	return data, nil
 }
 
 func (s *HTTPSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {

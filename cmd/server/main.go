@@ -13,6 +13,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/gateway"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
@@ -73,6 +74,7 @@ func main() {
 
 	// 4. 初始化 Runtime
 	btReg := bt.DefaultRegistry()
+	compReg := component.DefaultRegistry()
 	bus := event.NewBus()
 	reg := npc.NewRegistry()
 	dec := decision.NewCenter(cfg.DecisionDecayRate)
@@ -82,7 +84,7 @@ func main() {
 	// 5. 初始化 Gateway
 	hub := gateway.NewHub()
 	router := gateway.NewRouter()
-	gateway.RegisterHandlers(router, reg, bus, src, btReg, evtTypes)
+	gateway.RegisterHandlers(router, reg, bus, src, btReg, compReg, evtTypes)
 	srv := gateway.NewServer(cfg.Addr, hub, router)
 
 	// 6. 启动
@@ -225,12 +227,20 @@ func buildSnapshot(tick uint64, reg *npc.Registry) protocol.WorldSnapshot {
 		currentAction, _ := blackboard.Get(inst.BB, blackboard.KeyCurrentAction)
 		threatLevel, _ := blackboard.Get(inst.BB, blackboard.KeyThreatLevel)
 
+		// 从 behavior 组件安全读取 FSM 状态
+		fsmState := ""
+		if beh, ok := npc.GetComponent[*component.BehaviorComponent](inst, "behavior"); ok && beh.FSM != nil {
+			fsmState = beh.FSM.Current()
+		} else if inst.FSM != nil {
+			fsmState = inst.FSM.Current()
+		}
+
 		npcs = append(npcs, protocol.NPCState{
 			NpcID:         inst.ID,
 			TypeName:      inst.TypeName,
 			X:             inst.Position.X,
 			Z:             inst.Position.Z,
-			FSMState:      inst.FSM.Current(),
+			FSMState:      fsmState,
 			CurrentAction: currentAction,
 			ThreatLevel:   threatLevel,
 		})

@@ -10,7 +10,8 @@ type Source interface {
 	LoadBTTree(treeName string) ([]byte, error)          // 返回原始 JSON，由调用方用 bt.BuildFromJSON 构建
 	LoadEventConfig(eventType string) ([]byte, error)    // 返回原始 JSON，调用方 Unmarshal 为 event.EventTypeConfig
 	LoadAllEventConfigs() (map[string][]byte, error)     // 返回所有事件类型配置：name → raw JSON
-	LoadNPCTypeConfig(npcType string) ([]byte, error)    // 返回原始 JSON，调用方 Unmarshal 为 npc.NPCTypeConfig
+	LoadNPCTypeConfig(npcType string) ([]byte, error)    // 返回原始 JSON，调用方 Unmarshal 为 npc.NPCTypeConfig（v2 兼容）
+	LoadNPCTemplate(name string) ([]byte, error)         // 返回原始 JSON，组件化 NPC 模板（v3）
 }
 
 // 确保 JSONSource 实现 Source 接口

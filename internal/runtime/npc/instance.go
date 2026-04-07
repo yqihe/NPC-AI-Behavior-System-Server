@@ -9,6 +9,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/fsm"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/perception"
 )
@@ -27,9 +28,14 @@ type Instance struct {
 	TypeName   string
 	Position   event.Vec3
 	BB         *blackboard.Blackboard
-	FSM        *fsm.FSM
-	BTrees     map[string]bt.Node // 状态名 → 已构建的 BT 根节点
-	Perception *perception.PerceptionConfig
+	FSM        *fsm.FSM                     // 兼容旧代码，组件化后从 behavior 组件提取
+	BTrees     map[string]bt.Node            // 兼容旧代码，组件化后从 behavior 组件提取
+	Perception *perception.PerceptionConfig  // 兼容旧代码，组件化后从 perception 组件提取
+
+	// 组件化字段（v3 新增）
+	components  map[string]component.Component
+	tickables   []component.Tickable
+	displayName string
 }
 
 // NewInstance 从配置创建 NPC 实例（工厂函数）
@@ -93,6 +99,48 @@ func (inst *Instance) Tick() {
 	// 3. BT Tick
 	ctx := &bt.Context{BB: inst.BB}
 	tree.Tick(ctx)
+}
+
+// HasComponent 检查 NPC 是否拥有指定组件
+func (inst *Instance) HasComponent(name string) bool {
+	if inst.components == nil {
+		return false
+	}
+	_, ok := inst.components[name]
+	return ok
+}
+
+// RawComponent 获取原始组件接口
+func (inst *Instance) RawComponent(name string) (component.Component, bool) {
+	if inst.components == nil {
+		return nil, false
+	}
+	c, ok := inst.components[name]
+	return c, ok
+}
+
+// TickComponents 执行所有 Tickable 组件的 Tick
+func (inst *Instance) TickComponents(dt float64) {
+	for _, t := range inst.tickables {
+		t.Tick(inst.BB, dt)
+	}
+}
+
+// GetComponent 类型安全获取组件
+func GetComponent[T component.Component](inst *Instance, name string) (T, bool) {
+	var zero T
+	if inst.components == nil {
+		return zero, false
+	}
+	c, ok := inst.components[name]
+	if !ok {
+		return zero, false
+	}
+	typed, ok := c.(T)
+	if !ok {
+		return zero, false
+	}
+	return typed, ok
 }
 
 // ParseNPCTypeConfig 从 JSON 字节解析 NPC 类型配置

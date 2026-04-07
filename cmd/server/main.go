@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"log/slog"
+	"net/http"
 	"os"
 	"os/signal"
 	"time"
@@ -16,6 +17,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/metrics"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/social"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/zone"
@@ -84,8 +86,10 @@ func main() {
 	zm := zone.NewZoneManager()
 	tickRate := time.Duration(cfg.TickRateMs) * time.Millisecond
 	sched := runtime.NewScheduler(bus, reg, dec, evtTypes, tickRate)
+	m := metrics.New()
 	sched.GroupManager = gm
 	sched.ZoneManager = zm
+	sched.Metrics = m
 
 	// 4a. 加载区域配置并批量生成 NPC
 	regionConfigs, err := src.LoadAllRegionConfigs()
@@ -111,6 +115,10 @@ func main() {
 	router := gateway.NewRouter()
 	gateway.RegisterHandlers(router, reg, bus, src, btReg, compReg, gm, evtTypes)
 	srv := gateway.NewServer(cfg.Addr, hub, router)
+	srv.MetricsHandler = func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+		w.Write([]byte(m.PrometheusText()))
+	}
 
 	// 6. 启动
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)

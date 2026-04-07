@@ -13,6 +13,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/perception"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/metrics"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/social"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/zone"
 )
@@ -32,6 +33,7 @@ type Scheduler struct {
 	TickRate     time.Duration
 	GroupManager *social.GroupManager // 可选，nil 时不做群组处理
 	ZoneManager  *zone.ZoneManager  // 可选，nil 时不做区域过滤
+	Metrics      *metrics.Metrics   // 可选，nil 时不采集指标
 }
 
 // NewScheduler 创建 Tick 调度器
@@ -47,6 +49,8 @@ func NewScheduler(bus *event.Bus, reg *npc.Registry, dec *decision.Center, evtTy
 
 // Tick 执行一次完整的 Tick 循环
 func (s *Scheduler) Tick(dt float64) {
+	tickStart := time.Now()
+
 	// 1. 事件 TTL 衰减
 	s.EventBus.Tick(dt)
 
@@ -115,7 +119,7 @@ func (s *Scheduler) Tick(dt float64) {
 				tree.Tick(ctx)
 			}
 		} else if inst.FSM != nil {
-			input := decision.DecisionInput{Perceived: st.perceived, Weights: decision.DefaultWeights}
+			input := decision.DecisionInput{NPCID: inst.ID, Perceived: st.perceived, Weights: decision.DefaultWeights}
 			s.Decision.Evaluate(inst.BB, inst.Position, input, s.EvtTypes, dt)
 			inst.Tick()
 		}
@@ -127,6 +131,31 @@ func (s *Scheduler) Tick(dt float64) {
 	// --- 群体状态传播 ---
 	if s.GroupManager != nil {
 		s.propagateGroupState()
+	}
+
+	// --- 指标采集 ---
+	if s.Metrics != nil {
+		duration := time.Since(tickStart).Seconds()
+		zoneCounts := make(map[string]int)
+		sleepingCount := 0
+		for _, st := range states {
+			zoneID := ""
+			if pos, ok := npc.GetComponent[*component.PositionComponent](st.inst, "position"); ok {
+				zoneID = pos.ZoneID
+			}
+			if zoneID == "" {
+				zoneID = "global"
+			}
+			zoneCounts[zoneID]++
+		}
+		if s.ZoneManager != nil {
+			for _, z := range s.ZoneManager.AllZones() {
+				if !z.Active {
+					sleepingCount += len(z.NPCIDs())
+				}
+			}
+		}
+		s.Metrics.RecordTick(duration, len(states), zoneCounts, sleepingCount)
 	}
 }
 
@@ -238,6 +267,7 @@ func (s *Scheduler) writeThreatMemory(inst *npc.Instance, perceived []perception
 // buildDecisionInput 从 NPC 组件组装决策输入
 func (s *Scheduler) buildDecisionInput(inst *npc.Instance, perceived []perception.PerceiveResult) decision.DecisionInput {
 	input := decision.DecisionInput{
+		NPCID:     inst.ID,
 		Perceived: perceived,
 		Weights:   decision.DefaultWeights,
 	}

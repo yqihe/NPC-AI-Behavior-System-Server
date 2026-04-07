@@ -105,6 +105,12 @@ func NewInstanceFromTemplate(
 		}
 		beh.FSM = f
 
+		// FSM 状态变迁日志
+		npcID := id // capture for closure
+		f.OnTransition(func(from, to string) {
+			slog.Debug("fsm.transition", "npc_id", npcID, "from", from, "to", to)
+		})
+
 		btrees := make(map[string]bt.Node, len(beh.BTRefs))
 		for state, treeName := range beh.BTRefs {
 			treeData, err := src.LoadBTTree(treeName)

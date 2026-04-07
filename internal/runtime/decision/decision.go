@@ -1,6 +1,7 @@
 package decision
 
 import (
+	"log/slog"
 	"math"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
@@ -20,6 +21,7 @@ var DefaultWeights = DecisionWeights{Threat: 1.0, Needs: 0, Emotion: 0}
 
 // DecisionInput 决策中心输入，由 Scheduler 从组件数据组装
 type DecisionInput struct {
+	NPCID        string                      // NPC ID（用于日志）
 	Perceived    []perception.PerceiveResult // 感知结果（威胁维度）
 	NeedUrgency  float64                     // 需求紧迫度 0~100
 	EmotionValue float64                     // 主导情绪强度
@@ -70,6 +72,20 @@ func (c *Center) Evaluate(bb *blackboard.Blackboard, npcPos event.Vec3, input De
 		winner = "emotion"
 	}
 	blackboard.Set(bb, blackboard.KeyDecisionWinner, winner)
+
+	// 决策日志
+	maxEventID := ""
+	if maxEvent != nil {
+		maxEventID = maxEvent.ID
+	}
+	slog.Debug("decision.evaluated",
+		"npc_id", input.NPCID,
+		"threat_score", threatScore,
+		"need_score", needScore,
+		"emotion_score", emotionScore,
+		"winner", winner,
+		"threat_source", maxEventID,
+	)
 
 	// 6. 威胁维度 BB 写入（保持 v2 兼容，不受仲裁结果影响）
 	if maxEvent != nil {

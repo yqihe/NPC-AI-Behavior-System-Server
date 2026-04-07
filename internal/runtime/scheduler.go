@@ -76,6 +76,10 @@ func (s *Scheduler) Tick(dt float64) {
 		if beh, ok := npc.GetComponent[*component.BehaviorComponent](inst, "behavior"); ok {
 			input := s.buildDecisionInput(inst, perceived)
 			s.Decision.Evaluate(inst.BB, inst.Position, input, s.EvtTypes, dt)
+
+			// 4c. 写入威胁记忆
+			s.writeThreatMemory(inst, perceived, now)
+
 			beh.FSM.Tick(inst.BB)
 			state := beh.FSM.Current()
 			if tree, ok := beh.BTrees[state]; ok {
@@ -91,6 +95,34 @@ func (s *Scheduler) Tick(dt float64) {
 
 		// --- 通用组件 Tick ---
 		inst.TickComponents(dt)
+	})
+}
+
+// writeThreatMemory 将最高威胁事件写入 NPC 记忆
+func (s *Scheduler) writeThreatMemory(inst *npc.Instance, perceived []perception.PerceiveResult, now int64) {
+	if len(perceived) == 0 {
+		return
+	}
+	mem, ok := npc.GetComponent[*component.MemoryComponent](inst, "memory")
+	if !ok || !mem.SupportsType("threat") {
+		return
+	}
+	// 取最高强度事件
+	best := perceived[0]
+	for _, pr := range perceived[1:] {
+		if pr.Strength > best.Strength {
+			best = pr
+		}
+	}
+	if best.Event.SourceID == "" {
+		return
+	}
+	mem.AddMemory(component.MemoryEntry{
+		Type:      "threat",
+		TargetID:  best.Event.SourceID,
+		Value:     best.Strength,
+		Timestamp: now,
+		TTL:       mem.DecayTime,
 	})
 }
 

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sort"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
@@ -53,6 +54,11 @@ func NewInstanceFromTemplate(
 			tickables = append(tickables, t)
 		}
 	}
+
+	// 排序 tickables：memory(0) → needs(1) → emotion(2) → movement(3) → 其他(99)
+	sort.Slice(tickables, func(i, j int) bool {
+		return tickablePriority(tickables[i].Name()) < tickablePriority(tickables[j].Name())
+	})
 
 	// 3. 创建 Blackboard 并设置初始值
 	bb := blackboard.New()
@@ -145,6 +151,23 @@ func behaviorBTrees(components map[string]component.Component) map[string]bt.Nod
 		return beh.BTrees
 	}
 	return nil
+}
+
+// tickablePriority 返回组件 Tick 顺序优先级（小值先执行）
+// memory 先于 emotion（memory 写 BB，emotion 读 BB）
+func tickablePriority(name string) int {
+	switch name {
+	case "memory":
+		return 0
+	case "needs":
+		return 1
+	case "emotion":
+		return 2
+	case "movement":
+		return 3
+	default:
+		return 99
+	}
 }
 
 // perceptionConfig 从组件提取 PerceptionConfig（兼容旧代码读 inst.Perception）

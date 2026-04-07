@@ -42,7 +42,8 @@ var KeyEmotionDominantVal = NewKey[float64]("emotion_dominant_val") // 主导情
 
 // --- 记忆系统 ---
 
-var KeyMemoryCount = NewKey[int64]("memory_count") // 当前记忆条目数
+var KeyMemoryCount       = NewKey[int64]("memory_count")          // 当前记忆条目数
+var KeyMemoryThreatValue = NewKey[float64]("memory_threat_value") // 最高威胁记忆的 value
 
 // --- 社交系统 ---
 

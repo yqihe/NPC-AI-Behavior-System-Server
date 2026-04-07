@@ -23,14 +23,23 @@ type EmotionComponent struct {
 
 func (c *EmotionComponent) Name() string { return "emotion" }
 
-// Tick 每项 value 按 decay_rate 衰减，找最高情绪写 BB
+// Tick 情绪更新：有威胁记忆时恐惧累积，否则衰减。找最高情绪写 BB
 func (c *EmotionComponent) Tick(bb *blackboard.Blackboard, dt float64) {
+	// 读取威胁记忆值（由 memory.Tick 在本帧先写入）
+	threatMemVal, _ := blackboard.Get(bb, blackboard.KeyMemoryThreatValue)
+
 	dominantName := ""
 	dominantVal := -1.0
 
 	for i := range c.EmotionStates {
 		e := &c.EmotionStates[i]
-		e.Value = math.Max(0, e.Value-e.DecayRate*dt)
+		if e.Name == "fear" && threatMemVal > 0 {
+			// 有威胁记忆 → 恐惧累积
+			e.Value += e.AccumulateRate * dt
+		} else {
+			// 无威胁记忆或非 fear 情绪 → 正常衰减
+			e.Value = math.Max(0, e.Value-e.DecayRate*dt)
+		}
 		if e.Value > dominantVal {
 			dominantVal = e.Value
 			dominantName = e.Name

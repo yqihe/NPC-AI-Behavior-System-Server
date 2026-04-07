@@ -31,6 +31,7 @@ func RegisterHandlers(
 	router.Register(protocol.TypeQueryNPC, makeQueryNPCHandler(registry))
 	router.Register(protocol.TypeEnterZone, makeEnterZoneHandler())
 	router.Register(protocol.TypeLeaveZone, makeLeaveZoneHandler())
+	router.Register(protocol.TypeDebugNPC, makeDebugNPCHandler(registry))
 }
 
 func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Registry, compReg *component.Registry, gm *social.GroupManager) HandlerFunc {
@@ -248,6 +249,71 @@ func makeLeaveZoneHandler() HandlerFunc {
 		conn.ZoneID = ""
 		slog.Debug("handler.leave_zone")
 		resp, _ := protocol.NewResponse(msg.ID, map[string]string{"zone_id": ""})
+		conn.sendMsg(resp)
+		return nil
+	}
+}
+
+func makeDebugNPCHandler(registry *npc.Registry) HandlerFunc {
+	return func(conn *Conn, msg *protocol.Message) error {
+		var req protocol.DebugNPCRequest
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			resp, _ := protocol.NewError(msg.ID, "invalid_data", "failed to parse debug_npc request")
+			conn.sendMsg(resp)
+			return nil
+		}
+		if req.NpcID == "" {
+			resp, _ := protocol.NewError(msg.ID, "invalid_data", "npc_id cannot be empty")
+			conn.sendMsg(resp)
+			return nil
+		}
+
+		inst, ok := registry.Get(req.NpcID)
+		if !ok {
+			resp, _ := protocol.NewError(msg.ID, "npc_not_found", "NPC with id "+req.NpcID+" not found")
+			conn.sendMsg(resp)
+			return nil
+		}
+
+		// 收集组件名列表
+		var compNames []string
+		for _, name := range []string{"identity", "position", "behavior", "perception", "movement", "personality", "needs", "emotion", "memory", "social"} {
+			if inst.HasComponent(name) {
+				compNames = append(compNames, name)
+			}
+		}
+
+		// FSM 状态
+		fsmState := ""
+		if beh, ok := npc.GetComponent[*component.BehaviorComponent](inst, "behavior"); ok && beh.FSM != nil {
+			fsmState = beh.FSM.Current()
+		}
+
+		// 记忆
+		var memories []protocol.DebugMemory
+		if mem, ok := npc.GetComponent[*component.MemoryComponent](inst, "memory"); ok {
+			for _, e := range mem.GetMemories("threat") {
+				memories = append(memories, protocol.DebugMemory{Type: e.Type, TargetID: e.TargetID, Value: e.Value, TTL: e.TTL})
+			}
+			for _, e := range mem.GetMemories("location") {
+				memories = append(memories, protocol.DebugMemory{Type: e.Type, TargetID: e.TargetID, Value: e.Value, TTL: e.TTL})
+			}
+			for _, e := range mem.GetMemories("social") {
+				memories = append(memories, protocol.DebugMemory{Type: e.Type, TargetID: e.TargetID, Value: e.Value, TTL: e.TTL})
+			}
+		}
+
+		debugResp := protocol.DebugNPCResponse{
+			NpcID:      inst.ID,
+			Template:   inst.TypeName,
+			Position:   protocol.DebugPosition{X: inst.Position.X, Z: inst.Position.Z},
+			FSMState:   fsmState,
+			Components: compNames,
+			Blackboard: inst.BB.Dump(),
+			Memories:   memories,
+		}
+
+		resp, _ := protocol.NewResponse(msg.ID, debugResp)
 		conn.sendMsg(resp)
 		return nil
 	}

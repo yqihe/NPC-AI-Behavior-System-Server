@@ -141,6 +141,17 @@ func (bb *Blackboard) GetRaw(name string) (any, bool) {
 	return val, ok
 }
 
+// Dump 导出全部 key-value 副本（供调试查询使用）
+func (bb *Blackboard) Dump() map[string]any {
+	bb.mu.RLock()
+	defer bb.mu.RUnlock()
+	result := make(map[string]any, len(bb.data))
+	for k, v := range bb.data {
+		result[k] = v
+	}
+	return result
+}
+
 // SetRaw 通过字符串名称写入值（供 BT 叶子节点使用）
 // 未注册的 Key 写入时 panic（R3）
 func (bb *Blackboard) SetRaw(name string, val any) {

@@ -14,6 +14,7 @@ const (
 	TypeWorldSnapshot = "world_snapshot"
 	TypeEnterZone     = "enter_zone"
 	TypeLeaveZone     = "leave_zone"
+	TypeDebugNPC      = "debug_npc"
 )
 
 // --- 信封 ---
@@ -48,6 +49,36 @@ type PublishEventRequest struct {
 	Severity  float64 `json:"severity,omitempty"`  // 可选，0 则用默认值
 	SourceID  string  `json:"source_id,omitempty"` // 可选
 	ZoneID    string  `json:"zone_id,omitempty"`   // 可选，事件发生的区域 ID
+}
+
+// DebugNPCRequest 查询 NPC 完整内部状态
+type DebugNPCRequest struct {
+	NpcID string `json:"npc_id"`
+}
+
+// DebugNPCResponse NPC 完整内部状态
+type DebugNPCResponse struct {
+	NpcID      string            `json:"npc_id"`
+	Template   string            `json:"template"`
+	Position   DebugPosition     `json:"position"`
+	FSMState   string            `json:"fsm_state"`
+	Components []string          `json:"components"`
+	Blackboard map[string]any    `json:"blackboard"`
+	Memories   []DebugMemory     `json:"memories,omitempty"`
+}
+
+// DebugPosition 调试用位置信息
+type DebugPosition struct {
+	X float64 `json:"x"`
+	Z float64 `json:"z"`
+}
+
+// DebugMemory 调试用记忆条目
+type DebugMemory struct {
+	Type     string  `json:"type"`
+	TargetID string  `json:"target_id"`
+	Value    float64 `json:"value"`
+	TTL      float64 `json:"ttl"`
 }
 
 // EnterZoneRequest 客户端进入区域

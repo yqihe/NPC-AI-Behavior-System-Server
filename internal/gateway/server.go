@@ -15,10 +15,11 @@ var upgrader = websocket.Upgrader{
 
 // Server WebSocket 网关服务
 type Server struct {
-	hub    *Hub
-	router *Router
-	addr   string
-	httpSrv *http.Server
+	hub            *Hub
+	router         *Router
+	addr           string
+	httpSrv        *http.Server
+	MetricsHandler http.HandlerFunc // /metrics 端点（可选）
 }
 
 // NewServer 创建网关服务
@@ -34,6 +35,9 @@ func NewServer(addr string, hub *Hub, router *Router) *Server {
 func (s *Server) Start(ctx context.Context) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/ws", s.handleWS)
+	if s.MetricsHandler != nil {
+		mux.HandleFunc("/metrics", s.MetricsHandler)
+	}
 
 	s.httpSrv = &http.Server{
 		Addr:    s.addr,

@@ -18,6 +18,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/social"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/zone"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/pkg/protocol"
 )
 
@@ -80,9 +81,30 @@ func main() {
 	reg := npc.NewRegistry()
 	dec := decision.NewCenter(cfg.DecisionDecayRate)
 	gm := social.NewGroupManager()
+	zm := zone.NewZoneManager()
 	tickRate := time.Duration(cfg.TickRateMs) * time.Millisecond
 	sched := runtime.NewScheduler(bus, reg, dec, evtTypes, tickRate)
 	sched.GroupManager = gm
+	sched.ZoneManager = zm
+
+	// 4a. 加载区域配置并批量生成 NPC
+	regionConfigs, err := src.LoadAllRegionConfigs()
+	if err != nil {
+		slog.Warn("zones.load_error", "err", err)
+	}
+	for _, data := range regionConfigs {
+		var z zone.Zone
+		if err := json.Unmarshal(data, &z); err != nil {
+			slog.Error("zones.parse_error", "err", err)
+			continue
+		}
+		z.Active = true
+		zm.AddZone(&z)
+		if err := z.Spawn(compReg, src, btReg, reg, gm); err != nil {
+			slog.Error("zones.spawn_error", "zone", z.ID, "err", err)
+		}
+	}
+	slog.Info("zones.loaded", "count", zm.Count())
 
 	// 5. 初始化 Gateway
 	hub := gateway.NewHub()

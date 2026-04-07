@@ -183,3 +183,11 @@ func (s *HTTPSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {
 	}
 	return data, nil
 }
+
+func (s *HTTPSource) LoadRegionConfig(regionID string) ([]byte, error) {
+	return nil, fmt.Errorf("config: region loading via HTTP not yet implemented")
+}
+
+func (s *HTTPSource) LoadAllRegionConfigs() (map[string][]byte, error) {
+	return make(map[string][]byte), nil
+}

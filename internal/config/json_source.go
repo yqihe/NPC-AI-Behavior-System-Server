@@ -121,6 +121,45 @@ func (s *JSONSource) LoadNPCTemplate(name string) ([]byte, error) {
 	return data, nil
 }
 
+// LoadRegionConfig 加载区域配置：configs/regions/<regionID>.json
+func (s *JSONSource) LoadRegionConfig(regionID string) ([]byte, error) {
+	if err := safePath(regionID); err != nil {
+		return nil, err
+	}
+	path := filepath.Join(s.basePath, "regions", regionID+".json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil, fmt.Errorf("config: load region %q: %w", regionID, err)
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("config: region %q is not valid JSON", regionID)
+	}
+	return data, nil
+}
+
+// LoadAllRegionConfigs 加载 configs/regions/ 下所有区域配置
+func (s *JSONSource) LoadAllRegionConfigs() (map[string][]byte, error) {
+	dir := filepath.Join(s.basePath, "regions")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		// 目录不存在时返回空 map（向后兼容）
+		return make(map[string][]byte), nil
+	}
+	result := make(map[string][]byte)
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		name := entry.Name()[:len(entry.Name())-5]
+		data, err := s.LoadRegionConfig(name)
+		if err != nil {
+			return nil, err
+		}
+		result[name] = data
+	}
+	return result, nil
+}
+
 // LoadNPCTypeConfig 加载 NPC 类型配置：configs/npc_types/<npcType>.json（v2 兼容）
 func (s *JSONSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {
 	if err := safePath(npcType); err != nil {

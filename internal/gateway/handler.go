@@ -29,6 +29,8 @@ func RegisterHandlers(
 	router.Register(protocol.TypeRemoveNPC, makeRemoveNPCHandler(registry, gm))
 	router.Register(protocol.TypePublishEvent, makePublishEventHandler(bus, evtTypes))
 	router.Register(protocol.TypeQueryNPC, makeQueryNPCHandler(registry))
+	router.Register(protocol.TypeEnterZone, makeEnterZoneHandler())
+	router.Register(protocol.TypeLeaveZone, makeLeaveZoneHandler())
 }
 
 func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Registry, compReg *component.Registry, gm *social.GroupManager) HandlerFunc {
@@ -220,6 +222,32 @@ func makeQueryNPCHandler(registry *npc.Registry) HandlerFunc {
 			CurrentAction: currentAction,
 			ThreatLevel:   threatLevel,
 		})
+		conn.sendMsg(resp)
+		return nil
+	}
+}
+
+func makeEnterZoneHandler() HandlerFunc {
+	return func(conn *Conn, msg *protocol.Message) error {
+		var req protocol.EnterZoneRequest
+		if err := json.Unmarshal(msg.Data, &req); err != nil {
+			resp, _ := protocol.NewError(msg.ID, "invalid_data", "failed to parse enter_zone request")
+			conn.sendMsg(resp)
+			return nil
+		}
+		conn.ZoneID = req.ZoneID
+		slog.Debug("handler.enter_zone", "zone_id", req.ZoneID)
+		resp, _ := protocol.NewResponse(msg.ID, map[string]string{"zone_id": req.ZoneID})
+		conn.sendMsg(resp)
+		return nil
+	}
+}
+
+func makeLeaveZoneHandler() HandlerFunc {
+	return func(conn *Conn, msg *protocol.Message) error {
+		conn.ZoneID = ""
+		slog.Debug("handler.leave_zone")
+		resp, _ := protocol.NewResponse(msg.ID, map[string]string{"zone_id": ""})
 		conn.sendMsg(resp)
 		return nil
 	}

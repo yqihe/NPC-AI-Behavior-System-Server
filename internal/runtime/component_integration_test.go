@@ -80,8 +80,8 @@ func TestComponentIntegration_SimpleNPC_NoAIPipeline(t *testing.T) {
 	if !ok {
 		t.Error("move_state should be set by movement Tick")
 	}
-	if moveState != "idle" {
-		t.Errorf("move_state = %q, want %q", moveState, "idle")
+	if moveState != "moving" && moveState != "arrived" {
+		t.Errorf("move_state = %q, want moving or arrived", moveState)
 	}
 }
 
@@ -148,8 +148,8 @@ func TestComponentIntegration_ReactiveNPC_FullPipeline(t *testing.T) {
 	if !ok {
 		t.Error("move_state should be set")
 	}
-	if moveState != "idle" {
-		t.Errorf("move_state = %q, want %q", moveState, "idle")
+	if moveState != "moving" && moveState != "arrived" {
+		t.Errorf("move_state = %q, want moving or arrived", moveState)
 	}
 }
 
@@ -195,10 +195,10 @@ func TestComponentIntegration_MixedTick(t *testing.T) {
 	// 两者都有 move_state（都有 movement 组件）
 	bMove, _ := blackboard.Get(butterfly.BB, blackboard.KeyMoveState)
 	wMove, _ := blackboard.Get(wolf.BB, blackboard.KeyMoveState)
-	if bMove != "idle" {
-		t.Errorf("butterfly move_state = %q, want %q", bMove, "idle")
+	if bMove != "moving" && bMove != "arrived" {
+		t.Errorf("butterfly move_state = %q, want moving or arrived", bMove)
 	}
-	if wMove != "idle" {
-		t.Errorf("wolf move_state = %q, want %q", wMove, "idle")
+	if wMove != "moving" && wMove != "arrived" {
+		t.Errorf("wolf move_state = %q, want moving or arrived", wMove)
 	}
 }

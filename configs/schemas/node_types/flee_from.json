@@ -1,0 +1,38 @@
+{
+  "node_type": "flee_from",
+  "display_name": "逃离威胁源",
+  "category": "leaf",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["source_key_x", "source_key_z"],
+    "properties": {
+      "source_key_x": {
+        "type": "string",
+        "title": "威胁源 X 坐标 Key",
+        "description": "Blackboard 中存储威胁源 X 坐标的 Key 名称",
+        "minLength": 1
+      },
+      "source_key_z": {
+        "type": "string",
+        "title": "威胁源 Z 坐标 Key",
+        "description": "Blackboard 中存储威胁源 Z 坐标的 Key 名称",
+        "minLength": 1
+      },
+      "distance": {
+        "type": "number",
+        "title": "安全距离",
+        "description": "逃到此距离后返回 Success（米），默认 100",
+        "minimum": 0,
+        "default": 100
+      },
+      "speed": {
+        "type": "number",
+        "title": "逃跑速度",
+        "description": "米/秒，默认 5.0",
+        "minimum": 0,
+        "default": 5.0
+      }
+    }
+  }
+}

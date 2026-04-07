@@ -83,7 +83,7 @@ func (s *Scheduler) Tick(dt float64) {
 			beh.FSM.Tick(inst.BB)
 			state := beh.FSM.Current()
 			if tree, ok := beh.BTrees[state]; ok {
-				ctx := &bt.Context{BB: inst.BB}
+				ctx := &bt.Context{BB: inst.BB, DeltaTime: dt}
 				tree.Tick(ctx)
 			}
 		} else if inst.FSM != nil {
@@ -95,6 +95,7 @@ func (s *Scheduler) Tick(dt float64) {
 
 		// --- 通用组件 Tick ---
 		inst.TickComponents(dt)
+		inst.SyncPosition()
 	})
 }
 

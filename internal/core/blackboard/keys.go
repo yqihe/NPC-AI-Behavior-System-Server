@@ -59,4 +59,6 @@ var KeyEmotionScore   = NewKey[float64]("emotion_score")    // 情绪原始分
 
 // --- 移动系统 ---
 
-var KeyMoveState = NewKey[string]("move_state") // 移动状态（idle/moving/arrived）
+var KeyMoveState   = NewKey[string]("move_state")    // 移动状态（idle/moving/arrived）
+var KeyMoveTargetX = NewKey[float64]("move_target_x") // 当前移动目标 X
+var KeyMoveTargetZ = NewKey[float64]("move_target_z") // 当前移动目标 Z

@@ -88,6 +88,11 @@ func NewInstanceFromTemplate(
 		}
 	}
 
+	// 记录 movement spawn 点
+	if mov, ok := components["movement"].(*component.MovementComponent); ok {
+		mov.SetSpawn(posComp.X, posComp.Z)
+	}
+
 	// 4. 如果有 behavior 组件，加载 FSM + BT
 	if beh, ok := components["behavior"].(*component.BehaviorComponent); ok {
 		fsmCfg, err := src.LoadFSMConfig(beh.FSMRef)

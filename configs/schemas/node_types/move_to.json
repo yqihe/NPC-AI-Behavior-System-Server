@@ -1,0 +1,31 @@
+{
+  "node_type": "move_to",
+  "display_name": "移动到目标",
+  "category": "leaf",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["target_key_x", "target_key_z"],
+    "properties": {
+      "target_key_x": {
+        "type": "string",
+        "title": "目标 X 坐标 Key",
+        "description": "Blackboard 中存储目标 X 坐标的 Key 名称",
+        "minLength": 1
+      },
+      "target_key_z": {
+        "type": "string",
+        "title": "目标 Z 坐标 Key",
+        "description": "Blackboard 中存储目标 Z 坐标的 Key 名称",
+        "minLength": 1
+      },
+      "speed": {
+        "type": "number",
+        "title": "移动速度",
+        "description": "米/秒，默认 3.0",
+        "minimum": 0,
+        "default": 3.0
+      }
+    }
+  }
+}

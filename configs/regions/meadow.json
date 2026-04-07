@@ -1,0 +1,18 @@
+{
+  "region_id": "meadow",
+  "name": "风语草原",
+  "region_type": "wilderness",
+  "spawn_table": [
+    {
+      "template_ref": "butterfly_01",
+      "count": 3,
+      "spawn_points": [
+        {"x": 100, "z": 200},
+        {"x": 150, "z": 250},
+        {"x": 120, "z": 230}
+      ],
+      "wander_radius": 30,
+      "respawn_seconds": 120
+    }
+  ]
+}

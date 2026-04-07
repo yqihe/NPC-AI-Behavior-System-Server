@@ -14,6 +14,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/perception"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/social"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/zone"
 )
 
 // npcTickState 单个 NPC 在 Tick 中的暂存状态
@@ -30,6 +31,7 @@ type Scheduler struct {
 	EvtTypes     map[string]*event.EventTypeConfig
 	TickRate     time.Duration
 	GroupManager *social.GroupManager // 可选，nil 时不做群组处理
+	ZoneManager  *zone.ZoneManager  // 可选，nil 时不做区域过滤
 }
 
 // NewScheduler 创建 Tick 调度器
@@ -58,6 +60,17 @@ func (s *Scheduler) Tick(dt float64) {
 	var states []npcTickState
 
 	s.Registry.ForEach(func(inst *npc.Instance) {
+		// 跳过休眠区域的 NPC
+		if s.ZoneManager != nil {
+			zoneID := ""
+			if pos, ok := npc.GetComponent[*component.PositionComponent](inst, "position"); ok {
+				zoneID = pos.ZoneID
+			}
+			if !s.ZoneManager.IsActive(zoneID) {
+				return
+			}
+		}
+
 		blackboard.Set(inst.BB, blackboard.KeyCurrentTime, now)
 
 		var perceived []perception.PerceiveResult

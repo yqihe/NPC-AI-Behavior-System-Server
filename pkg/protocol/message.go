@@ -12,6 +12,8 @@ const (
 	TypeResponse      = "response"
 	TypeError         = "error"
 	TypeWorldSnapshot = "world_snapshot"
+	TypeEnterZone     = "enter_zone"
+	TypeLeaveZone     = "leave_zone"
 )
 
 // --- 信封 ---
@@ -46,6 +48,11 @@ type PublishEventRequest struct {
 	Severity  float64 `json:"severity,omitempty"`  // 可选，0 则用默认值
 	SourceID  string  `json:"source_id,omitempty"` // 可选
 	ZoneID    string  `json:"zone_id,omitempty"`   // 可选，事件发生的区域 ID
+}
+
+// EnterZoneRequest 客户端进入区域
+type EnterZoneRequest struct {
+	ZoneID string `json:"zone_id"`
 }
 
 // QueryNPCRequest 查询 NPC 状态

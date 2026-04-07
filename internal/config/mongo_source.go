@@ -180,3 +180,11 @@ func (s *MongoSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {
 	}
 	return data, nil
 }
+
+func (s *MongoSource) LoadRegionConfig(regionID string) ([]byte, error) {
+	return nil, fmt.Errorf("config: region loading via MongoDB not yet implemented")
+}
+
+func (s *MongoSource) LoadAllRegionConfigs() (map[string][]byte, error) {
+	return make(map[string][]byte), nil
+}

@@ -22,6 +22,7 @@ type Conn struct {
 	ws     *websocket.Conn
 	send   chan []byte // 出站消息缓冲
 	router *Router
+	ZoneID string // 客户端所在区域，空=全局（收全部 NPC）
 }
 
 // NewConn 创建连接

@@ -14,6 +14,9 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/perception"
 )
 
+// ZeroVec3 返回零值 Vec3（便捷函数）
+func ZeroVec3() event.Vec3 { return event.Vec3{} }
+
 // NPCTypeConfig NPC 类型配置（从 JSON 加载）
 type NPCTypeConfig struct {
 	TypeName   string                      `json:"type_name"`

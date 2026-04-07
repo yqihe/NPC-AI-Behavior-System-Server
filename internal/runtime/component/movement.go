@@ -48,6 +48,8 @@ func (c *MovementComponent) Tick(bb *blackboard.Blackboard, dt float64) {
 		c.tickWander(bb, posX, posZ, dt)
 	case "patrol":
 		c.tickPatrol(bb, posX, posZ, dt)
+	case "follow":
+		c.tickFollow(bb, posX, posZ, dt)
 	default:
 		blackboard.Set(bb, blackboard.KeyMoveState, "idle")
 	}
@@ -101,6 +103,23 @@ func (c *MovementComponent) tickPatrol(bb *blackboard.Blackboard, posX, posZ, dt
 
 	maxStep := c.MoveSpeed * dt
 	newX, newZ := MoveToward(posX, posZ, target.X, target.Z, maxStep)
+	c.writePosition(bb, newX, newZ, "moving")
+}
+
+func (c *MovementComponent) tickFollow(bb *blackboard.Blackboard, posX, posZ, dt float64) {
+	targetX, okX := blackboard.Get(bb, blackboard.KeyFollowTargetX)
+	targetZ, okZ := blackboard.Get(bb, blackboard.KeyFollowTargetZ)
+	if !okX || !okZ {
+		blackboard.Set(bb, blackboard.KeyMoveState, "idle")
+		return
+	}
+	dist := Distance2D(posX, posZ, targetX, targetZ)
+	if dist < 2.0 {
+		blackboard.Set(bb, blackboard.KeyMoveState, "arrived")
+		return
+	}
+	maxStep := c.MoveSpeed * dt
+	newX, newZ := MoveToward(posX, posZ, targetX, targetZ, maxStep)
 	c.writePosition(bb, newX, newZ, "moving")
 }
 

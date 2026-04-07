@@ -20,6 +20,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/social"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/pkg/protocol"
 )
 
@@ -58,12 +59,14 @@ func startTestServer(t *testing.T) (wsURL string, cleanup func()) {
 	bus := event.NewBus()
 	reg := npc.NewRegistry()
 	dec := decision.NewCenter(10.0)
+	gm := social.NewGroupManager()
 	sched := runtime.NewScheduler(bus, reg, dec, evtTypes, tickRate)
+	sched.GroupManager = gm
 
 	// 初始化 Gateway
 	hub := gateway.NewHub()
 	router := gateway.NewRouter()
-	gateway.RegisterHandlers(router, reg, bus, src, btReg, compReg, evtTypes)
+	gateway.RegisterHandlers(router, reg, bus, src, btReg, compReg, gm, evtTypes)
 
 	// 随机端口
 	listener, err := net.Listen("tcp", "127.0.0.1:0")

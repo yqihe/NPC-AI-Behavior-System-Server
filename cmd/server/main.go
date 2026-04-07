@@ -17,6 +17,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/social"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/pkg/protocol"
 )
 
@@ -78,13 +79,15 @@ func main() {
 	bus := event.NewBus()
 	reg := npc.NewRegistry()
 	dec := decision.NewCenter(cfg.DecisionDecayRate)
+	gm := social.NewGroupManager()
 	tickRate := time.Duration(cfg.TickRateMs) * time.Millisecond
 	sched := runtime.NewScheduler(bus, reg, dec, evtTypes, tickRate)
+	sched.GroupManager = gm
 
 	// 5. 初始化 Gateway
 	hub := gateway.NewHub()
 	router := gateway.NewRouter()
-	gateway.RegisterHandlers(router, reg, bus, src, btReg, compReg, evtTypes)
+	gateway.RegisterHandlers(router, reg, bus, src, btReg, compReg, gm, evtTypes)
 	srv := gateway.NewServer(cfg.Addr, hub, router)
 
 	// 6. 启动

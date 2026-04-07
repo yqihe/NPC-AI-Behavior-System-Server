@@ -1,0 +1,32 @@
+{
+  "component": "social",
+  "display_name": "社交组件",
+  "blackboard_keys": ["group_id", "social_role"],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "properties": {
+      "group_id": {
+        "type": "string",
+        "title": "群组 ID",
+        "description": "同 group_id 的 NPC 组成群组，共享感知信息"
+      },
+      "faction": {
+        "type": "string",
+        "title": "阵营",
+        "description": "阵营名称，同阵营友好，异阵营关系可配置"
+      },
+      "role": {
+        "type": "string",
+        "title": "社交角色",
+        "description": "leader=领导者(被跟随), follower=跟随者(跟随 leader 移动)",
+        "enum": ["leader", "follower"]
+      },
+      "follow_target": {
+        "type": "string",
+        "title": "跟随目标",
+        "description": "要跟随的 NPC ID，仅 follower 角色有效"
+      }
+    }
+  }
+}

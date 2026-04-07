@@ -1,0 +1,49 @@
+{
+  "component": "emotion",
+  "display_name": "情绪组件",
+  "blackboard_keys": ["emotion_dominant", "emotion_dominant_val"],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["emotion_states"],
+    "properties": {
+      "emotion_states": {
+        "type": "array",
+        "title": "情绪列表",
+        "description": "NPC 的情绪状态定义，受刺激时按 accumulate_rate 累积，无刺激时按 decay_rate 衰减",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["name", "accumulate_rate", "decay_rate"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "title": "情绪名",
+              "description": "如 fear、anger、calm",
+              "minLength": 1
+            },
+            "value": {
+              "type": "number",
+              "title": "当前值",
+              "description": "初始情绪值，默认 0",
+              "minimum": 0,
+              "default": 0
+            },
+            "accumulate_rate": {
+              "type": "number",
+              "title": "累积速率",
+              "description": "受刺激时每秒累积量",
+              "minimum": 0
+            },
+            "decay_rate": {
+              "type": "number",
+              "title": "衰减速率",
+              "description": "无刺激时每秒衰减量",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

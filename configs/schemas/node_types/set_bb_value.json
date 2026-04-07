@@ -1,0 +1,22 @@
+{
+  "node_type": "set_bb_value",
+  "display_name": "设置黑板值",
+  "category": "leaf",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["key", "value"],
+    "properties": {
+      "key": {
+        "type": "string",
+        "title": "黑板 Key",
+        "description": "要写入的 Blackboard Key 名称，必须已在注册表中注册",
+        "minLength": 1
+      },
+      "value": {
+        "title": "写入值",
+        "description": "写入的值，类型不限（number、string、boolean 等）"
+      }
+    }
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "component": "needs",
+  "display_name": "需求组件",
+  "blackboard_keys": ["need_lowest", "need_lowest_val"],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["need_types"],
+    "properties": {
+      "need_types": {
+        "type": "array",
+        "title": "需求列表",
+        "description": "NPC 的生理需求定义，每项按 decay_rate 每秒衰减，低于阈值时驱动行为",
+        "minItems": 1,
+        "items": {
+          "type": "object",
+          "required": ["name", "max", "decay_rate"],
+          "properties": {
+            "name": {
+              "type": "string",
+              "title": "需求名",
+              "description": "如 hunger、fatigue、curiosity",
+              "minLength": 1
+            },
+            "current": {
+              "type": "number",
+              "title": "当前值",
+              "description": "不填则默认等于 max",
+              "minimum": 0
+            },
+            "max": {
+              "type": "number",
+              "title": "最大值",
+              "minimum": 0
+            },
+            "decay_rate": {
+              "type": "number",
+              "title": "衰减速率",
+              "description": "每秒衰减量",
+              "minimum": 0
+            }
+          }
+        }
+      }
+    }
+  }
+}

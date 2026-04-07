@@ -1,0 +1,35 @@
+{
+  "condition_type": "composite",
+  "display_name": "条件组合节点",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "description": "AND 或 OR 组合，子项为条件节点（leaf 或 composite），递归结构",
+    "oneOf": [
+      {
+        "required": ["and"],
+        "properties": {
+          "and": {
+            "type": "array",
+            "title": "AND 条件组",
+            "description": "所有子条件为 true 时结果为 true",
+            "items": { "type": "object" },
+            "minItems": 1
+          }
+        }
+      },
+      {
+        "required": ["or"],
+        "properties": {
+          "or": {
+            "type": "array",
+            "title": "OR 条件组",
+            "description": "任一子条件为 true 时结果为 true",
+            "items": { "type": "object" },
+            "minItems": 1
+          }
+        }
+      }
+    ]
+  }
+}

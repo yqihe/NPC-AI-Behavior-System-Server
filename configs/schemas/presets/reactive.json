@@ -1,0 +1,8 @@
+{
+  "preset": "reactive",
+  "display_name": "反应型",
+  "description": "能感知环境事件并通过 FSM+BT 做出 AI 反应的 NPC",
+  "required_components": ["identity", "position"],
+  "default_components": ["behavior", "perception", "movement", "personality"],
+  "optional_components": ["needs", "emotion", "memory", "social"]
+}

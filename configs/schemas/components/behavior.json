@@ -1,0 +1,33 @@
+{
+  "component": "behavior",
+  "display_name": "行为组件",
+  "blackboard_keys": [
+    "fsm_state",
+    "current_action",
+    "threat_level",
+    "threat_source",
+    "threat_expire_at",
+    "last_event_type",
+    "current_time"
+  ],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["fsm_ref", "bt_refs"],
+    "properties": {
+      "fsm_ref": {
+        "type": "string",
+        "title": "状态机引用",
+        "description": "FSM 配置名称，对应 configs/fsm/<name>.json",
+        "minLength": 1
+      },
+      "bt_refs": {
+        "type": "object",
+        "title": "行为树映射",
+        "description": "FSM 状态名 → 行为树配置名称，对应 configs/bt_trees/<name>.json",
+        "additionalProperties": { "type": "string" },
+        "minProperties": 1
+      }
+    }
+  }
+}

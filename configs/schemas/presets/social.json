@@ -1,0 +1,8 @@
+{
+  "preset": "social",
+  "display_name": "社交型",
+  "description": "具备完整 AI 能力的 NPC，能与其他 NPC 组成群组、共享感知、产生群体行为",
+  "required_components": ["identity", "position"],
+  "default_components": ["behavior", "perception", "movement", "personality", "needs", "emotion", "memory", "social"],
+  "optional_components": []
+}

@@ -1,0 +1,10 @@
+{
+  "node_type": "inverter",
+  "display_name": "反转节点",
+  "category": "decorator",
+  "params_schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "description": "无参数，子节点通过 child 字段定义。将 Success 反转为 Failure，Failure 反转为 Success"
+  }
+}

@@ -1,0 +1,44 @@
+{
+  "component": "position",
+  "display_name": "位置组件",
+  "blackboard_keys": ["npc_pos_x", "npc_pos_z"],
+  "schema": {
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "required": ["x", "z"],
+    "properties": {
+      "x": {
+        "type": "number",
+        "title": "X 坐标",
+        "description": "世界坐标 X 轴位置",
+        "default": 0
+      },
+      "y": {
+        "type": "number",
+        "title": "Y 坐标",
+        "description": "世界坐标 Y 轴（高度）",
+        "default": 0
+      },
+      "z": {
+        "type": "number",
+        "title": "Z 坐标",
+        "description": "世界坐标 Z 轴位置",
+        "default": 0
+      },
+      "orientation": {
+        "type": "number",
+        "title": "朝向",
+        "description": "朝向角度（0-360）",
+        "minimum": 0,
+        "maximum": 360,
+        "default": 0
+      },
+      "zone_id": {
+        "type": "string",
+        "title": "所属区域",
+        "description": "NPC 所属区域 ID，关联区域管理",
+        "default": ""
+      }
+    }
+  }
+}

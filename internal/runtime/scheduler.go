@@ -74,7 +74,8 @@ func (s *Scheduler) Tick(dt float64) {
 
 		// 4b. 决策 + FSM + BT（需要 behavior 组件或旧字段）
 		if beh, ok := npc.GetComponent[*component.BehaviorComponent](inst, "behavior"); ok {
-			s.Decision.Evaluate(inst.BB, inst.Position, perceived, s.EvtTypes, dt)
+			input := s.buildDecisionInput(inst, perceived)
+			s.Decision.Evaluate(inst.BB, inst.Position, input, s.EvtTypes, dt)
 			beh.FSM.Tick(inst.BB)
 			state := beh.FSM.Current()
 			if tree, ok := beh.BTrees[state]; ok {
@@ -83,13 +84,60 @@ func (s *Scheduler) Tick(dt float64) {
 			}
 		} else if inst.FSM != nil {
 			// v2 兼容：旧路径创建的 NPC
-			s.Decision.Evaluate(inst.BB, inst.Position, perceived, s.EvtTypes, dt)
+			input := decision.DecisionInput{Perceived: perceived, Weights: decision.DefaultWeights}
+			s.Decision.Evaluate(inst.BB, inst.Position, input, s.EvtTypes, dt)
 			inst.Tick()
 		}
 
 		// --- 通用组件 Tick ---
 		inst.TickComponents(dt)
 	})
+}
+
+// buildDecisionInput 从 NPC 组件组装决策输入
+func (s *Scheduler) buildDecisionInput(inst *npc.Instance, perceived []perception.PerceiveResult) decision.DecisionInput {
+	input := decision.DecisionInput{
+		Perceived: perceived,
+		Weights:   decision.DefaultWeights,
+	}
+
+	// 读取 personality 权重
+	if pers, ok := npc.GetComponent[*component.PersonalityComponent](inst, "personality"); ok {
+		input.Weights = decision.DecisionWeights{
+			Threat:  pers.DecisionWeights.Threat,
+			Needs:   pers.DecisionWeights.Needs,
+			Emotion: pers.DecisionWeights.Emotion,
+		}
+	}
+
+	// 读取需求紧迫度
+	if needs, ok := npc.GetComponent[*component.NeedsComponent](inst, "needs"); ok {
+		input.NeedUrgency = calcNeedUrgency(inst.BB, needs)
+	}
+
+	// 读取情绪强度
+	emotionVal, _ := blackboard.Get(inst.BB, blackboard.KeyEmotionDominantVal)
+	input.EmotionValue = emotionVal
+
+	return input
+}
+
+// calcNeedUrgency 从 BB 读取最低需求值，计算紧迫度 (max-current)/max*100
+func calcNeedUrgency(bb *blackboard.Blackboard, needs *component.NeedsComponent) float64 {
+	lowestName, ok := blackboard.Get(bb, blackboard.KeyNeedLowest)
+	if !ok || lowestName == "" {
+		return 0
+	}
+	lowestVal, _ := blackboard.Get(bb, blackboard.KeyNeedLowestVal)
+	for _, n := range needs.NeedTypes {
+		if n.Name == lowestName {
+			if n.Max <= 0 {
+				return 0
+			}
+			return (n.Max - lowestVal) / n.Max * 100
+		}
+	}
+	return 0
 }
 
 // filterPerception 感知过滤：区域隔离 → 强度计算 → 注意力裁剪

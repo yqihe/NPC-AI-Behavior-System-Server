@@ -51,7 +51,7 @@ func NewBTDCFromScale(id string, cfg *experiment.ScaleConfig, btReg *bt.Registry
 
 func (n *BTDCNPC) Tick(events []*event.Event, evtTypes map[string]*event.EventTypeConfig, dt float64) string {
 	perceived := filterPerceived(n.position, n.percCfg, events, evtTypes)
-	n.decision.Evaluate(n.bb, n.position, perceived, evtTypes, dt)
+	n.decision.Evaluate(n.bb, n.position, decision.DecisionInput{Perceived: perceived, Weights: decision.DefaultWeights}, evtTypes, dt)
 	ctx := &bt.Context{BB: n.bb}
 	n.tree.Tick(ctx)
 	return n.State()

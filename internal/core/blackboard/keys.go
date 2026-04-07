@@ -49,6 +49,13 @@ var KeyMemoryCount = NewKey[int64]("memory_count") // 当前记忆条目数
 var KeyGroupID    = NewKey[string]("group_id")     // 群组 ID
 var KeySocialRole = NewKey[string]("social_role")   // 社交角色（leader/follower）
 
+// --- 决策系统 ---
+
+var KeyDecisionWinner = NewKey[string]("decision_winner")   // 仲裁胜出维度（threat/needs/emotion）
+var KeyThreatScore    = NewKey[float64]("threat_score")     // 威胁原始分
+var KeyNeedScore      = NewKey[float64]("need_score")       // 需求原始分
+var KeyEmotionScore   = NewKey[float64]("emotion_score")    // 情绪原始分
+
 // --- 移动系统 ---
 
 var KeyMoveState = NewKey[string]("move_state") // 移动状态（idle/moving/arrived）

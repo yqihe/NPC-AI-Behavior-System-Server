@@ -51,10 +51,9 @@ func NewHTTPSource(ctx context.Context, baseURL string) (*HTTPSource, error) {
 		optional bool // optional 端点失败时不报错（ADMIN 可能尚未实现）
 	}{
 		{"/api/configs/event_types", s.eventTypes, false},
-		{"/api/configs/npc_types", s.npcTypes, false},
 		{"/api/configs/fsm_configs", s.fsmConfigs, false},
 		{"/api/configs/bt_trees", s.btTrees, false},
-		{"/api/v1/npc-templates/export", s.npcTemplates, true},
+		{"/api/configs/npc_templates", s.npcTemplates, false},
 	}
 
 	client := &http.Client{}
@@ -182,6 +181,14 @@ func (s *HTTPSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {
 		return nil, fmt.Errorf("config: NPC type %q is not valid JSON", npcType)
 	}
 	return data, nil
+}
+
+func (s *HTTPSource) LoadAllNPCTemplates() (map[string][]byte, error) {
+	result := make(map[string][]byte, len(s.npcTemplates))
+	for name, data := range s.npcTemplates {
+		result[name] = data
+	}
+	return result, nil
 }
 
 func (s *HTTPSource) LoadRegionConfig(regionID string) ([]byte, error) {

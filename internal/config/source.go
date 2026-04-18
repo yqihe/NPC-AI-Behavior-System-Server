@@ -11,7 +11,8 @@ type Source interface {
 	LoadEventConfig(eventType string) ([]byte, error)    // 返回原始 JSON，调用方 Unmarshal 为 event.EventTypeConfig
 	LoadAllEventConfigs() (map[string][]byte, error)     // 返回所有事件类型配置：name → raw JSON
 	LoadNPCTypeConfig(npcType string) ([]byte, error)    // 返回原始 JSON，调用方 Unmarshal 为 npc.NPCTypeConfig（v2 兼容）
-	LoadNPCTemplate(name string) ([]byte, error)         // 返回原始 JSON，组件化 NPC 模板（v3）
+	LoadNPCTemplate(name string) ([]byte, error)         // 返回原始 JSON，NPC 模板（支持组件化和 ADMIN fields/behavior 两种形状）
+	LoadAllNPCTemplates() (map[string][]byte, error)    // 返回全部 NPC 模板：name → raw JSON
 	LoadRegionConfig(regionID string) ([]byte, error)   // 返回原始 JSON，区域配置
 	LoadAllRegionConfigs() (map[string][]byte, error)   // 返回所有区域配置
 }

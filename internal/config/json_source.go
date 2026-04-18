@@ -121,6 +121,31 @@ func (s *JSONSource) LoadNPCTemplate(name string) ([]byte, error) {
 	return data, nil
 }
 
+// LoadAllNPCTemplates 加载 configs/npc_templates/ 下所有 NPC 模板
+func (s *JSONSource) LoadAllNPCTemplates() (map[string][]byte, error) {
+	dir := filepath.Join(s.basePath, "npc_templates")
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return make(map[string][]byte), nil
+	}
+	result := make(map[string][]byte)
+	for _, entry := range entries {
+		if entry.IsDir() || filepath.Ext(entry.Name()) != ".json" {
+			continue
+		}
+		name := strings.TrimSuffix(entry.Name(), ".json")
+		data, err := os.ReadFile(filepath.Join(dir, entry.Name()))
+		if err != nil {
+			return nil, err
+		}
+		if !json.Valid(data) {
+			return nil, fmt.Errorf("config: NPC template %q is not valid JSON", name)
+		}
+		result[name] = data
+	}
+	return result, nil
+}
+
 // LoadRegionConfig 加载区域配置：configs/regions/<regionID>.json
 func (s *JSONSource) LoadRegionConfig(regionID string) ([]byte, error) {
 	if err := safePath(regionID); err != nil {

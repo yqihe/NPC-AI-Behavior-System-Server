@@ -22,9 +22,9 @@ func newTestAdminServer() *httptest.Server {
 		fmt.Fprint(w, `{"items":[{"name":"explosion","config":{"name":"explosion","default_severity":80,"default_ttl":15.0,"perception_mode":"auditory","range":500.0}}]}`)
 	})
 
-	mux.HandleFunc("/api/configs/npc_types", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/configs/npc_templates", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
-		fmt.Fprint(w, `{"items":[{"name":"civilian","config":{"type_name":"civilian","fsm_ref":"civilian","bt_refs":{"Idle":"civilian/idle"},"perception":{"visual_range":200.0,"auditory_range":500.0}}}]}`)
+		fmt.Fprint(w, `{"items":[{"name":"civilian","config":{"template_ref":"admin-uuid-1","fields":{"hp":100,"visual_range":200.0,"auditory_range":500.0},"behavior":{"fsm_ref":"civilian","bt_refs":{"Idle":"civilian/idle"}}}}]}`)
 	})
 
 	mux.HandleFunc("/api/configs/fsm_configs", func(w http.ResponseWriter, r *http.Request) {
@@ -89,13 +89,25 @@ func TestHTTPSource_LoadAll(t *testing.T) {
 		t.Error("explosion not found in LoadAllEventConfigs")
 	}
 
-	// LoadNPCTypeConfig
-	npcData, err := src.LoadNPCTypeConfig("civilian")
+	// LoadNPCTemplate (ADMIN v3 shape)
+	tmplData, err := src.LoadNPCTemplate("civilian")
 	if err != nil {
-		t.Fatalf("LoadNPCTypeConfig: %v", err)
+		t.Fatalf("LoadNPCTemplate: %v", err)
 	}
-	if !json.Valid(npcData) {
-		t.Error("LoadNPCTypeConfig returned invalid JSON")
+	if !json.Valid(tmplData) {
+		t.Error("LoadNPCTemplate returned invalid JSON")
+	}
+
+	// LoadAllNPCTemplates
+	allTmpls, err := src.LoadAllNPCTemplates()
+	if err != nil {
+		t.Fatalf("LoadAllNPCTemplates: %v", err)
+	}
+	if len(allTmpls) != 1 {
+		t.Errorf("expected 1 NPC template, got %d", len(allTmpls))
+	}
+	if _, ok := allTmpls["civilian"]; !ok {
+		t.Error("civilian not found in LoadAllNPCTemplates")
 	}
 }
 
@@ -118,8 +130,8 @@ func TestHTTPSource_NotFound(t *testing.T) {
 	if _, err := src.LoadEventConfig("nonexistent"); err == nil {
 		t.Error("expected error for nonexistent event config")
 	}
-	if _, err := src.LoadNPCTypeConfig("nonexistent"); err == nil {
-		t.Error("expected error for nonexistent NPC type config")
+	if _, err := src.LoadNPCTemplate("nonexistent"); err == nil {
+		t.Error("expected error for nonexistent NPC template")
 	}
 }
 

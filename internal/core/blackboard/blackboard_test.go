@@ -181,3 +181,54 @@ func TestDuplicateKeyRegistration_Panics(t *testing.T) {
 	// 尝试注册一个已存在的 Key 名称，应该 panic
 	blackboard.NewKey[string]("threat_level")
 }
+
+func TestRegisterDynamic_Idempotent(t *testing.T) {
+	// 首次注册
+	blackboard.RegisterDynamic("dyn_hp", "float64")
+	if !blackboard.IsRegistered("dyn_hp") {
+		t.Fatal("expected dyn_hp to be registered")
+	}
+
+	// 重复注册不 panic（与 register 的关键差异）
+	blackboard.RegisterDynamic("dyn_hp", "float64")
+	blackboard.RegisterDynamic("dyn_hp", "int64") // 即使类型不一样也不 panic
+}
+
+func TestSetDynamic_AutoRegisters(t *testing.T) {
+	bb := blackboard.New()
+
+	// 写入未注册的 key，应该自动注册
+	blackboard.SetDynamic(bb, "dyn_attack", 15.0)
+	if !blackboard.IsRegistered("dyn_attack") {
+		t.Fatal("expected dyn_attack to be auto-registered")
+	}
+
+	// 读取写入的值
+	val, ok := bb.GetRaw("dyn_attack")
+	if !ok {
+		t.Fatal("expected dyn_attack value readable")
+	}
+	if val != 15.0 {
+		t.Fatalf("expected 15.0, got %v", val)
+	}
+}
+
+func TestSetDynamic_DoesNotConflictWithNewKey(t *testing.T) {
+	bb := blackboard.New()
+
+	// 已通过 NewKey 注册的 key，SetDynamic 仍可写入（RegisterDynamic 幂等）
+	blackboard.SetDynamic(bb, "threat_level", 42.0)
+	val, ok := bb.GetRaw("threat_level")
+	if !ok || val != 42.0 {
+		t.Fatalf("expected 42.0 via GetRaw, got %v (ok=%v)", val, ok)
+	}
+}
+
+func TestSetDynamic_NilValue(t *testing.T) {
+	bb := blackboard.New()
+	// nil 不应 panic
+	blackboard.SetDynamic(bb, "dyn_nullable", nil)
+	if !blackboard.IsRegistered("dyn_nullable") {
+		t.Fatal("expected dyn_nullable to be registered despite nil value")
+	}
+}

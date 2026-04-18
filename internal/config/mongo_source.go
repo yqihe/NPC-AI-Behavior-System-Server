@@ -181,6 +181,14 @@ func (s *MongoSource) LoadNPCTypeConfig(npcType string) ([]byte, error) {
 	return data, nil
 }
 
+func (s *MongoSource) LoadAllNPCTemplates() (map[string][]byte, error) {
+	result := make(map[string][]byte, len(s.npcTemplates))
+	for name, data := range s.npcTemplates {
+		result[name] = data
+	}
+	return result, nil
+}
+
 func (s *MongoSource) LoadRegionConfig(regionID string) ([]byte, error) {
 	return nil, fmt.Errorf("config: region loading via MongoDB not yet implemented")
 }

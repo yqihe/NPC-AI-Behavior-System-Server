@@ -42,7 +42,7 @@ func TestDistance_XZOnly(t *testing.T) {
 // --- NewEvent ---
 
 func TestNewEvent_Defaults(t *testing.T) {
-	evt := NewEvent(testExplosion, Vec3{100, 0, 100}, "src_1", 0)
+	evt := NewEvent(testExplosion, Vec3{100, 0, 100}, "src_1", 0, "")
 	if evt.Type != "explosion" {
 		t.Errorf("expected type explosion, got %s", evt.Type)
 	}
@@ -61,15 +61,15 @@ func TestNewEvent_Defaults(t *testing.T) {
 }
 
 func TestNewEvent_SeverityOverride(t *testing.T) {
-	evt := NewEvent(testExplosion, Vec3{}, "src_1", 95)
+	evt := NewEvent(testExplosion, Vec3{}, "src_1", 95, "")
 	if evt.Severity != 95 {
 		t.Errorf("expected severity 95, got %f", evt.Severity)
 	}
 }
 
 func TestNewEvent_UniqueIDs(t *testing.T) {
-	e1 := NewEvent(testExplosion, Vec3{}, "", 0)
-	e2 := NewEvent(testExplosion, Vec3{}, "", 0)
+	e1 := NewEvent(testExplosion, Vec3{}, "", 0, "")
+	e2 := NewEvent(testExplosion, Vec3{}, "", 0, "")
 	if e1.ID == e2.ID {
 		t.Errorf("expected unique IDs, got %s and %s", e1.ID, e2.ID)
 	}
@@ -79,7 +79,7 @@ func TestNewEvent_UniqueIDs(t *testing.T) {
 
 func TestBus_PublishAndActive(t *testing.T) {
 	bus := NewBus()
-	evt := NewEvent(testExplosion, Vec3{100, 0, 100}, "src_1", 0)
+	evt := NewEvent(testExplosion, Vec3{100, 0, 100}, "src_1", 0, "")
 	bus.Publish(evt)
 
 	active := bus.Active()
@@ -93,7 +93,7 @@ func TestBus_PublishAndActive(t *testing.T) {
 
 func TestBus_ActiveReturnsSnapshot(t *testing.T) {
 	bus := NewBus()
-	bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0))
+	bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0, ""))
 
 	snapshot := bus.Active()
 	// 修改快照不影响总线
@@ -105,7 +105,7 @@ func TestBus_ActiveReturnsSnapshot(t *testing.T) {
 
 func TestBus_TickTTLDecay(t *testing.T) {
 	bus := NewBus()
-	evt := NewEvent(testExplosion, Vec3{}, "", 0) // TTL=15
+	evt := NewEvent(testExplosion, Vec3{}, "", 0, "") // TTL=15
 	bus.Publish(evt)
 
 	bus.Tick(5.0) // TTL: 15 → 10
@@ -121,8 +121,8 @@ func TestBus_TickTTLDecay(t *testing.T) {
 
 func TestBus_TickRemovesExpired(t *testing.T) {
 	bus := NewBus()
-	bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0)) // TTL=15
-	bus.Publish(NewEvent(testGunshot, Vec3{}, "", 0))   // TTL=10
+	bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0, "")) // TTL=15
+	bus.Publish(NewEvent(testGunshot, Vec3{}, "", 0, ""))   // TTL=10
 
 	bus.Tick(12.0) // explosion TTL=3, gunshot TTL=-2
 
@@ -137,8 +137,8 @@ func TestBus_TickRemovesExpired(t *testing.T) {
 
 func TestBus_TickRemovesAllExpired(t *testing.T) {
 	bus := NewBus()
-	bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0)) // TTL=15
-	bus.Publish(NewEvent(testGunshot, Vec3{}, "", 0))   // TTL=10
+	bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0, "")) // TTL=15
+	bus.Publish(NewEvent(testGunshot, Vec3{}, "", 0, ""))   // TTL=10
 
 	bus.Tick(20.0) // 全部过期
 
@@ -149,7 +149,7 @@ func TestBus_TickRemovesAllExpired(t *testing.T) {
 
 func TestBus_TickExactTTLZero(t *testing.T) {
 	bus := NewBus()
-	bus.Publish(NewEvent(testGunshot, Vec3{}, "", 0)) // TTL=10
+	bus.Publish(NewEvent(testGunshot, Vec3{}, "", 0, "")) // TTL=10
 
 	bus.Tick(10.0) // TTL=0，应该被移除
 
@@ -178,7 +178,7 @@ func TestBus_ConcurrentPublish(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0))
+			bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0, ""))
 		}()
 	}
 	wg.Wait()
@@ -197,7 +197,7 @@ func TestBus_ConcurrentPublishAndRead(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0))
+			bus.Publish(NewEvent(testExplosion, Vec3{}, "", 0, ""))
 		}()
 	}
 

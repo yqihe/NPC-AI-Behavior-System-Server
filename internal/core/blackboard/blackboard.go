@@ -31,6 +31,32 @@ func register(name string, typeName string) {
 	registry[name] = keyInfo{name: name, typeName: typeName}
 }
 
+// RegisterDynamic 动态注册 Key，用于 ADMIN NPC fields 等运行时来源。
+// 与 register 不同：同名重复幂等（首次注册生效，后续忽略），不 panic。
+func RegisterDynamic(name, typeName string) {
+	registryMu.Lock()
+	defer registryMu.Unlock()
+
+	if _, ok := registry[name]; ok {
+		return
+	}
+	registry[name] = keyInfo{name: name, typeName: typeName}
+}
+
+// SetDynamic 写入动态 field 值，未注册时自动通过 RegisterDynamic 注册。
+// 类型名从 val 反射推断。nil val 注册为 "nil"。
+func SetDynamic(bb *Blackboard, name string, val any) {
+	typeName := "nil"
+	if t := reflect.TypeOf(val); t != nil {
+		typeName = t.String()
+	}
+	RegisterDynamic(name, typeName)
+
+	bb.mu.Lock()
+	defer bb.mu.Unlock()
+	bb.data[name] = val
+}
+
 // IsRegistered 检查 Key 名称是否已注册（供配置加载校验用）
 func IsRegistered(name string) bool {
 	registryMu.RLock()

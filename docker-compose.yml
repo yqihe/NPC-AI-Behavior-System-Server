@@ -3,12 +3,9 @@ services:
     build: .
     ports:
       - "${NPC_PORT:-9820}:9820"
-    volumes:
-      - ./configs:/app/configs:ro
     environment:
       - NPC_ADDR=:9820
       - NPC_LOG_LEVEL=${NPC_LOG_LEVEL:-debug}
       - NPC_LOG_FORMAT=${NPC_LOG_FORMAT:-text}
-      - NPC_MONGO_URI=${NPC_MONGO_URI:-}
-      - NPC_ADMIN_API=${NPC_ADMIN_API:-}
+      - NPC_ADMIN_API=${NPC_ADMIN_API}
     restart: unless-stopped

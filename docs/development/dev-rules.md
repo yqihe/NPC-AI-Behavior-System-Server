@@ -38,8 +38,8 @@ docker compose down              # 停止
 
 ## ADMIN 联调
 
-- 配置变更必须通过 ADMIN REST API 写入 MongoDB，不能只改 `configs/` 目录
-- 服务端验证前必须先执行 `go run ./cmd/sync -api http://<ADMIN地址>` 同步配置
+- 配置变更必须通过 ADMIN REST API 写入
+- 服务端启动时从 `NPC_ADMIN_API` 全量拉取配置，无需手动同步
 - 联调流程详见 `.claude/commands/integration.md`
 
 ## Agent 使用规则

@@ -26,7 +26,6 @@ type serverConfig struct {
 	DecisionDecayRate float64 `json:"decision_decay_rate"`
 	LogLevel         string  `json:"log_level"`
 	LogFormat        string  `json:"log_format"`
-	MongoURI         string  `json:"mongo_uri"`
 	AdminAPI         string  `json:"admin_api"`
 }
 
@@ -44,28 +43,17 @@ func main() {
 		"log_format", cfg.LogFormat,
 	)
 
-	// 2. 初始化配置源（优先级：AdminAPI > MongoURI > JSONSource）
-	var src config.Source
-	if cfg.AdminAPI != "" {
-		httpSrc, err := config.NewHTTPSource(context.Background(), cfg.AdminAPI)
-		if err != nil {
-			slog.Error("config.http_error", "err", err)
-			os.Exit(1)
-		}
-		src = httpSrc
-		slog.Info("config.source", "type", "http", "base_url", cfg.AdminAPI)
-	} else if cfg.MongoURI != "" {
-		mongoSrc, err := config.NewMongoSource(context.Background(), cfg.MongoURI, "npc_ai")
-		if err != nil {
-			slog.Error("config.mongo_error", "err", err)
-			os.Exit(1)
-		}
-		src = mongoSrc
-		slog.Info("config.source", "type", "mongodb")
-	} else {
-		src = config.NewJSONSource("configs")
-		slog.Info("config.source", "type", "json", "dir", "configs")
+	// 2. 初始化配置源（唯一来源：ADMIN API）
+	if cfg.AdminAPI == "" {
+		slog.Error("config.missing", "msg", "NPC_ADMIN_API is required")
+		os.Exit(1)
 	}
+	src, err := config.NewHTTPSource(context.Background(), cfg.AdminAPI)
+	if err != nil {
+		slog.Error("config.http_error", "err", err)
+		os.Exit(1)
+	}
+	slog.Info("config.source", "type", "http", "base_url", cfg.AdminAPI)
 
 	// 3. 加载事件类型配置
 	evtTypes := loadAllEventTypes(src)
@@ -131,9 +119,6 @@ func applyEnvOverrides(cfg *serverConfig) {
 	}
 	if v := os.Getenv("NPC_LOG_FORMAT"); v != "" {
 		cfg.LogFormat = v
-	}
-	if v := os.Getenv("NPC_MONGO_URI"); v != "" {
-		cfg.MongoURI = v
 	}
 	if v := os.Getenv("NPC_ADMIN_API"); v != "" {
 		cfg.AdminAPI = v

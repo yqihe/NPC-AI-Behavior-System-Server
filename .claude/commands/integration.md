@@ -94,13 +94,7 @@
 
 ### 第 4 步：RESULT（服务端 → ADMIN）
 
-服务端收到 READY 后，**必须先执行配置同步**再验证：
-
-```bash
-go run ./cmd/sync -api http://<ADMIN地址>
-```
-
-同步完成后再运行测试：
+服务端收到 READY 后，重启服务（自动从 ADMIN API 拉取最新配置），然后运行测试：
 
 ```
 ## [RESULT] <标题>

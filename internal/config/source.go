@@ -13,5 +13,5 @@ type Source interface {
 	LoadNPCTypeConfig(npcType string) ([]byte, error)    // 返回原始 JSON，调用方 Unmarshal 为 npc.NPCTypeConfig
 }
 
-// 确保 JSONSource 实现 Source 接口
-var _ Source = (*JSONSource)(nil)
+// 确保 HTTPSource 实现 Source 接口
+var _ Source = (*HTTPSource)(nil)

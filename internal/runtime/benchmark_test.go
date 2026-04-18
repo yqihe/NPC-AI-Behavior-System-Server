@@ -18,7 +18,7 @@ import (
 
 // BenchmarkTick_100NPCs 验证 R14：100 NPC 单 Tick < 10ms
 func BenchmarkTick_100NPCs(b *testing.B) {
-	src := config.NewJSONSource(benchConfigsDir(b))
+	src := benchSource(b)
 	btReg := bt.DefaultRegistry()
 	evtTypes := benchLoadEvtTypes(b, src)
 
@@ -50,7 +50,7 @@ func BenchmarkTick_100NPCs(b *testing.B) {
 
 // TestTick_100NPCs_Under10ms 显式验证 R14 的延迟要求
 func TestTick_100NPCs_Under10ms(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
@@ -92,13 +92,17 @@ func TestTick_100NPCs_Under10ms(t *testing.T) {
 
 // --- benchmark helpers ---
 
-func benchConfigsDir(b *testing.B) string {
+func benchSource(b *testing.B) config.Source {
 	b.Helper()
 	wd, err := os.Getwd()
 	if err != nil {
 		b.Fatal(err)
 	}
-	return filepath.Join(wd, "..", "..", "configs")
+	src, err := config.NewSourceFromDir(filepath.Join(wd, "..", "..", "testdata", "configs"))
+	if err != nil {
+		b.Fatal(err)
+	}
+	return src
 }
 
 func benchLoadEvtTypes(b *testing.B, src config.Source) map[string]*event.EventTypeConfig {

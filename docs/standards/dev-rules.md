@@ -30,6 +30,22 @@
 - **阶段性工作完成后必须 push**：一轮代码修改+测试通过后，立即 push，不要囤积本地 commit
 - **push 后必须创建 PR 并合并**：feature/hotfix 分支 push 到远端后，如果该分支还没有对应的 PR，立即创建 PR；无冲突则直接 merge，有冲突则报告用户处理
 
+## 需求流程
+
+**任何新需求必须先跑 `/spec-create` 做规划，禁止直接跳到写代码。**
+
+- 不管需求大小，先产出 requirements.md（动机、验收标准、不做什么）
+- 技术方案产出 design.md（红线检查、并发安全、测试策略）
+- 任务拆解产出 tasks.md（原子任务、1-3 文件、依赖顺序）
+- 三阶段都需要用户审批后才能推进
+
+## 验证纪律
+
+- **永远不要说"应该没问题"**——必须跑真实命令拿到证据
+- 自己写的代码自己不当裁判，交给 `/verify`
+- 每个任务完成后**立即**跑 `/verify`，不是"建议"而是必须
+- 涉及并发的代码必须跑 `go test -race`
+
 ## 经验沉淀
 
 开发中发现的新规则、新坑、新禁令，按类型添加到对应文档：
@@ -38,6 +54,7 @@
 |----------|--------|
 | 所有项目通用禁令 | `docs/standards/red-lines.md` |
 | 所有项目通用规则 | `docs/standards/dev-rules.md` |
+| Go 语言硬禁令 | `docs/standards/go-red-lines.md` |
 | Go 语言陷阱 | `docs/standards/go-pitfalls.md` |
 | 项目架构禁令 | `docs/architecture/red-lines.md` |
 | 项目开发规则 | `docs/development/dev-rules.md` |

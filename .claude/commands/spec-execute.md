@@ -9,15 +9,23 @@
 
 ---
 
+## 分支纪律
+
+- 确认当前在 `feature/<feature-name>` 分支上，不在则先创建并切换
+- 每完成一个任务并验证通过后立即 commit
+- 全部任务完成：pull latest main → merge main → 确认构建通过 → push with `-u`
+
 ## 执行流程
 
-1. 加载 `docs/specs/<feature-name>/` 下的 requirements.md、design.md、tasks.md
-2. 定位目标任务，确认未完成
-3. 读取任务涉及的所有文件（先读再改，不准盲改）
-4. 执行实现
-5. 检查文档是否需要同步更新（参考 `docs/development/dev-rules.md` 文档同步章节）
-6. 在 tasks.md 中将任务标记为 `[x]`
-7. 停下，输出完成摘要，建议跑 `/verify <feature-name>`
+1. 确认当前分支正确
+2. 加载 `docs/specs/<feature-name>/` 下的 requirements.md、design.md、tasks.md
+3. 定位目标任务，确认未完成
+4. 读取任务涉及的所有文件（先读再改，不准盲改）
+5. 执行实现
+6. 检查文档是否需要同步更新（参考 `docs/development/dev-rules.md` 文档同步章节）
+7. 在 tasks.md 中将任务标记为 `[x]`
+8. **立即跑 `/verify <feature-name> --task=T[N]`**（必须验证，不是建议）
+9. PASS → commit → 继续下一个任务；FAIL → 停下，报告，修复，重新验证
 
 ---
 
@@ -30,6 +38,7 @@
 - **不准盲改**——动任何文件前必须先读它，理解上下文
 - **不准自己判定测试通过**——自己写的代码自己不当裁判，交给 `/verify`
 - **不准假装测试通过**——不准在完成摘要里写"测试应该没问题"
+- **永远不要说"应该没问题"**——必须跑真实命令拿到证据，任何"应该"都要替换成"已验证"
 
 ## Agent 使用
 

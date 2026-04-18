@@ -12,9 +12,6 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/fsm"
 )
 
-// 确保 HTTPSource 实现 Source 接口
-var _ Source = (*HTTPSource)(nil)
-
 // httpConfigItem ADMIN API 返回的配置条目
 type httpConfigItem struct {
 	Name   string          `json:"name"`

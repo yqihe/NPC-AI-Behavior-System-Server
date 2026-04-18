@@ -15,13 +15,17 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/perception"
 )
 
-func configsDir(t *testing.T) string {
+func testSource(t *testing.T) config.Source {
 	t.Helper()
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Join(wd, "..", "..", "configs")
+	src, err := config.NewSourceFromDir(filepath.Join(wd, "..", "..", "testdata", "configs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return src
 }
 
 // loadEvtTypes 从配置加载所有事件类型
@@ -63,7 +67,7 @@ func createCivilian(t *testing.T, id string, pos event.Vec3, src config.Source, 
 // --- 场景 1：平民遇到爆炸逃跑 ---
 
 func TestIntegration_Scenario1_CivilianFleeFromExplosion(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 	center := decision.NewCenter(10.0)
@@ -112,7 +116,7 @@ func TestIntegration_Scenario1_CivilianFleeFromExplosion(t *testing.T) {
 // --- 场景 2：事件过期后恢复 ---
 
 func TestIntegration_Scenario2_RecoverAfterEventExpires(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 	center := decision.NewCenter(20.0) // 较高衰减率便于测试
@@ -164,7 +168,7 @@ func TestIntegration_Scenario2_RecoverAfterEventExpires(t *testing.T) {
 // --- 场景 3：多事件同时到达——优先级仲裁 ---
 
 func TestIntegration_Scenario3_MultiEventPriority(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 	center := decision.NewCenter(10.0)
@@ -196,7 +200,7 @@ func TestIntegration_Scenario3_MultiEventPriority(t *testing.T) {
 // --- 场景 4：高威胁事件打断低威胁行为（事件抢占）---
 
 func TestIntegration_Scenario4_EventPreemption(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 	center := decision.NewCenter(10.0)
@@ -249,7 +253,7 @@ func TestIntegration_Scenario4_EventPreemption(t *testing.T) {
 // --- 场景 5：加新事件源不改代码 ---
 
 func TestIntegration_Scenario5_NewEventTypeFromConfig(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	evtTypes := loadEvtTypes(t, src)
 
 	// 新增一个 "fire" 事件类型（运行时动态添加）
@@ -300,7 +304,7 @@ func TestIntegration_Scenario5_NewEventTypeFromConfig(t *testing.T) {
 // --- 场景 6：Runtime × Core 联调 ---
 
 func TestIntegration_Scenario6_RuntimeCoreCrossLayer(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 

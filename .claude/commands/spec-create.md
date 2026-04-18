@@ -38,7 +38,7 @@
 
 - **方案描述**：技术方案、数据结构、接口定义
 - **方案对比**：至少列出一个备选方案，说明为什么不选
-- **红线检查**：逐条对照 `docs/standards/red-lines.md` 和 `docs/architecture/red-lines.md`，确认不违反。如果方案触及任何一条红线，必须修改方案或说明为什么需要修改红线本身（需用户批准）
+- **红线检查**：逐条对照 `docs/standards/red-lines.md`、`docs/standards/go-red-lines.md` 和 `docs/architecture/red-lines.md`，确认不违反。如果方案触及任何一条红线，必须修改方案或说明为什么需要修改红线本身（需用户批准）
 - **扩展轴影响**：这个设计是否会影响三个扩展轴的扩展性，正面还是负面
 - **依赖方向**：画出涉及的包之间的依赖关系，确认单向向下
 - **并发安全**：是否涉及共享状态，如何保护（参考 `docs/standards/go-pitfalls.md` 并发章节）

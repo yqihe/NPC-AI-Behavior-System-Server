@@ -5,12 +5,9 @@ package core_test
 
 import (
 	"encoding/json"
-	"os"
-	"path/filepath"
 	"sync"
 	"testing"
 
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/fsm"
@@ -366,14 +363,6 @@ func TestAttack_BT_SetRawUnregisteredKey(t *testing.T) {
 
 // --- Config 攻击 ---
 
-func testConfigsDir(t *testing.T) string {
-	t.Helper()
-	wd, err := os.Getwd()
-	if err != nil {
-		t.Fatal(err)
-	}
-	return filepath.Join(wd, "..", "..", "configs")
-}
 
 func TestAttack_Config_Concurrent(t *testing.T) {
 	// 并发加载同一配置文件不应出问题
@@ -382,7 +371,7 @@ func TestAttack_Config_Concurrent(t *testing.T) {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			src := config.NewJSONSource(testConfigsDir(t))
+			src := testSource(t)
 			cfg, err := src.LoadFSMConfig("civilian")
 			if err != nil {
 				t.Errorf("concurrent load failed: %v", err)

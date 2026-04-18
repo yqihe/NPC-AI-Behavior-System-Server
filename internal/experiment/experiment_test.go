@@ -15,13 +15,17 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 )
 
-func configsDir(t *testing.T) string {
+func testSource(t *testing.T) config.Source {
 	t.Helper()
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Join(wd, "..", "..", "configs")
+	src, err := config.NewSourceFromDir(filepath.Join(wd, "..", "..", "testdata", "configs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return src
 }
 
 func loadEvtTypes(t *testing.T, src config.Source) map[string]*event.EventTypeConfig {
@@ -43,7 +47,7 @@ func loadEvtTypes(t *testing.T, src config.Source) map[string]*event.EventTypeCo
 
 func allModes(t *testing.T) []experiment.ModeEntry {
 	t.Helper()
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	hybrid, err := modes.NewHybridNPC("hybrid", event.Vec3{}, src, btReg)
 	if err != nil {
@@ -76,7 +80,7 @@ func allModes(t *testing.T) []experiment.ModeEntry {
 
 func runScenario(t *testing.T, s *experiment.Scenario) *experiment.ComparisonReport {
 	t.Helper()
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	evtTypes := loadEvtTypes(t, src)
 	return experiment.NewRunner(s, evtTypes).RunAll(allModes(t))
 }

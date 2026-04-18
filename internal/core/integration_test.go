@@ -11,19 +11,22 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/fsm"
 )
 
-func configsDir(t *testing.T) string {
+func testSource(t *testing.T) config.Source {
 	t.Helper()
-	// internal/core/ → 项目根目录
 	wd, err := os.Getwd()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return filepath.Join(wd, "..", "..", "configs")
+	src, err := config.NewSourceFromDir(filepath.Join(wd, "..", "..", "testdata", "configs"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return src
 }
 
 // TestIntegration_FSM_FromConfig 完整链路：JSON 配置 → Config 加载 → FSM 创建 → BB 写入 → Tick → 状态转换
 func TestIntegration_FSM_FromConfig(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 
 	// 1. 加载 civilian FSM 配置
 	fsmCfg, err := src.LoadFSMConfig("civilian")
@@ -101,7 +104,7 @@ func TestIntegration_BT_WithBB(t *testing.T) {
 
 // TestIntegration_FSM_BT_Combined FSM 和 BT 通过 Blackboard 协同工作
 func TestIntegration_FSM_BT_Combined(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 
 	fsmCfg, err := src.LoadFSMConfig("civilian")
 	if err != nil {

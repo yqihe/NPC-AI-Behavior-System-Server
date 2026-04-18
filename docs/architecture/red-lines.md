@@ -51,5 +51,5 @@
 
 ## 禁止联调配置脱节
 
-- **禁止** ADMIN 侧只修改本地 `configs/` 文件就回复 READY。配置变更必须通过 REST API 写入 MongoDB
-- **禁止**服务端跳过 `cmd/sync` 直接验证。e2e 测试用 JSONSource，不同步就拿不到 ADMIN 新增的配置
+- **禁止** ADMIN 侧只修改本地文件就回复 READY。配置变更必须通过 ADMIN REST API 写入
+- 服务端启动时从 `NPC_ADMIN_API` 全量拉取配置，ADMIN 未就绪则启动失败

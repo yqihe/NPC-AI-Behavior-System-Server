@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime"
@@ -176,7 +175,7 @@ func TestAttack_Registry_RemoveNonexistent(t *testing.T) {
 
 func TestAttack_Registry_DoubleAdd(t *testing.T) {
 	reg := npc.NewRegistry()
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	inst := createCivilian(t, "npc_1", event.Vec3{}, src, btReg)
 	reg.Add(inst)
@@ -208,7 +207,7 @@ func TestAttack_Scheduler_NoNPCs(t *testing.T) {
 }
 
 func TestAttack_Scheduler_NoEvents(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
@@ -226,7 +225,7 @@ func TestAttack_Scheduler_NoEvents(t *testing.T) {
 }
 
 func TestAttack_Scheduler_RapidTicks(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
+	src := testSource(t)
 	btReg := bt.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 

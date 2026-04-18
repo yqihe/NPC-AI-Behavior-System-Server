@@ -31,11 +31,12 @@ const (
 func startTestServer(t *testing.T) (wsURL string, cleanup func()) {
 	t.Helper()
 
-	// 找到 configs 目录
+	// 从 testdata 目录加载测试配置
 	wd, _ := os.Getwd()
-	configsDir := filepath.Join(wd, "..", "..", "configs")
-
-	src := config.NewJSONSource(configsDir)
+	src, err := config.NewSourceFromDir(filepath.Join(wd, "..", "..", "testdata", "configs"))
+	if err != nil {
+		t.Fatalf("load test configs: %v", err)
+	}
 	btReg := bt.DefaultRegistry()
 
 	// 加载事件类型

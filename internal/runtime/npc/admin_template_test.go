@@ -168,6 +168,62 @@ func TestNewInstanceFromADMIN_DefaultsWhenFieldsMissing(t *testing.T) {
 	}
 }
 
+// ADMIN 当前只有合并的 perception_range，visual/auditory 都应回落到它
+func TestNewInstanceFromADMIN_PerceptionRangeFallback(t *testing.T) {
+	src := newFakeSource()
+	reg := bt.DefaultRegistry()
+
+	tmpl := &ADMINTemplate{
+		Name:   "merged",
+		Fields: map[string]any{"perception_range": 75.0}, // ADMIN 合并字段
+		Behavior: ADMINBehavior{
+			FSMRef: "guard",
+			BTRefs: map[string]string{"Idle": "guard/idle"},
+		},
+	}
+
+	inst, err := NewInstanceFromADMIN("npc_merged", event.Vec3{}, tmpl, src, reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst.Perception.VisualRange != 75.0 {
+		t.Errorf("expected visual_range=75 via perception_range fallback, got %v", inst.Perception.VisualRange)
+	}
+	if inst.Perception.AuditoryRange != 75.0 {
+		t.Errorf("expected auditory_range=75 via perception_range fallback, got %v", inst.Perception.AuditoryRange)
+	}
+}
+
+// 专用字段存在时优先于合并字段
+func TestNewInstanceFromADMIN_SpecificOverridesMerged(t *testing.T) {
+	src := newFakeSource()
+	reg := bt.DefaultRegistry()
+
+	tmpl := &ADMINTemplate{
+		Name: "mixed",
+		Fields: map[string]any{
+			"perception_range": 75.0, // 合并值
+			"visual_range":     120.0, // 专用值应胜出
+			// 无 auditory_range，应 fallback 到 perception_range
+		},
+		Behavior: ADMINBehavior{
+			FSMRef: "guard",
+			BTRefs: map[string]string{"Idle": "guard/idle"},
+		},
+	}
+
+	inst, err := NewInstanceFromADMIN("npc_mixed", event.Vec3{}, tmpl, src, reg)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if inst.Perception.VisualRange != 120.0 {
+		t.Errorf("expected visual_range=120 (specific wins), got %v", inst.Perception.VisualRange)
+	}
+	if inst.Perception.AuditoryRange != 75.0 {
+		t.Errorf("expected auditory_range=75 (fallback to merged), got %v", inst.Perception.AuditoryRange)
+	}
+}
+
 func TestNewInstanceFromADMIN_FSMNotFound(t *testing.T) {
 	src := newFakeSource()
 	reg := bt.DefaultRegistry()

@@ -3,6 +3,7 @@ package npc
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
@@ -66,10 +67,12 @@ func NewInstanceFromADMIN(id string, pos event.Vec3, tmpl *ADMINTemplate, src co
 		blackboard.SetDynamic(bb, k, v)
 	}
 
-	// 3. 从 fields 提取感知距离，缺失时兜底
+	// 3. 从 fields 提取感知距离。
+	// ADMIN 当前只有合并的 perception_range 字段（visual_range/auditory_range 未拆分），
+	// 为兼容两种命名，fallback 链：专用字段 > 合并字段 > 内置默认值。
 	percCfg := perception.PerceptionConfig{
-		VisualRange:   readFloat(tmpl.Fields, "visual_range", defaultVisualRange),
-		AuditoryRange: readFloat(tmpl.Fields, "auditory_range", defaultAuditoryRange),
+		VisualRange:   readFloatChain(tmpl.Fields, []string{"visual_range", "perception_range"}, defaultVisualRange),
+		AuditoryRange: readFloatChain(tmpl.Fields, []string{"auditory_range", "perception_range"}, defaultAuditoryRange),
 	}
 
 	// 4. 加载 FSM
@@ -126,6 +129,18 @@ func readFloat(fields map[string]any, key string, fallback float64) float64 {
 			return fallback
 		}
 		return f
+	}
+	return fallback
+}
+
+// readFloatChain 按顺序尝试 keys，返回第一个解析成功的 float64，全部失败时返回 fallback
+func readFloatChain(fields map[string]any, keys []string, fallback float64) float64 {
+	sentinel := math.NaN()
+	for _, k := range keys {
+		v := readFloat(fields, k, sentinel)
+		if !math.IsNaN(v) {
+			return v
+		}
 	}
 	return fallback
 }

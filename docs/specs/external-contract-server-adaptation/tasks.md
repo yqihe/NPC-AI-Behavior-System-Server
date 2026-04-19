@@ -6,7 +6,7 @@
 
 ---
 
-## T1: admin_template 升级为完整翻译层 (R1, R5, R6, R7, R8, R17)
+## T1: admin_template 升级为完整翻译层 (R1, R5, R6, R7, R8, R17) [x]
 
 **文件**：
 - `internal/runtime/npc/admin_template.go`（主改）

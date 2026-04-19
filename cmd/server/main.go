@@ -113,7 +113,7 @@ func main() {
 
 	// 4b. 无 zones 且有 ADMIN 模板时的回退 spawn：每模板 1 个实例于网格位置
 	if zm.Count() == 0 {
-		spawnFromADMINTemplates(src, btReg, reg)
+		spawnFromADMINTemplates(src, btReg, compReg, reg)
 	}
 
 	// 5. 初始化 Gateway
@@ -201,7 +201,7 @@ func initLogger(level, format string) {
 // spawnFromADMINTemplates 从 ADMIN 形状模板批量 spawn NPC。
 // 每个模板创建 1 个实例，按索引排布在 10m 网格上（y=0 平面）。
 // 无模板时无副作用。模板解析/创建失败逐条告警不中断。
-func spawnFromADMINTemplates(src config.Source, btReg *bt.Registry, reg *npc.Registry) {
+func spawnFromADMINTemplates(src config.Source, btReg *bt.Registry, compReg *component.Registry, reg *npc.Registry) {
 	tmpls, err := src.LoadAllNPCTemplates()
 	if err != nil {
 		slog.Warn("admin_spawn.load_error", "err", err)
@@ -220,7 +220,7 @@ func spawnFromADMINTemplates(src config.Source, btReg *bt.Registry, reg *npc.Reg
 			continue
 		}
 		pos := event.Vec3{X: float64(idx%10) * 10, Z: float64(idx/10) * 10}
-		inst, err := npc.NewInstanceFromADMIN(fmt.Sprintf("%s_%d", name, idx), pos, tmpl, src, btReg)
+		inst, err := npc.NewInstanceFromADMIN(fmt.Sprintf("%s_%d", name, idx), pos, tmpl, src, btReg, compReg)
 		if err != nil {
 			slog.Warn("admin_spawn.instance_error", "template", name, "err", err)
 			continue

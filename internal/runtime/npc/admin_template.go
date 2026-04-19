@@ -34,7 +34,7 @@ var optInBoolFields = [...]string{
 }
 
 // ADMINTemplate ADMIN v3 导出的 NPC 模板形状 `{template_ref, fields, behavior}`
-// 不同于组件化 TemplateConfig（`{name, preset, components}`）
+// 扁平字段 + 行为引用，T1 翻译层转换为 5 默认组件 + opt-in 组件（R17）
 type ADMINTemplate struct {
 	Name        string         `json:"-"`            // 由外部 items[].name 填入
 	TemplateRef string         `json:"template_ref"` // ADMIN 内部标识，服务端忽略
@@ -386,6 +386,23 @@ func personalityJSONFromFields(fields map[string]any) map[string]any {
 	return map[string]any{
 		"personality_type": personalityType,
 		"decision_weights": weights,
+	}
+}
+
+// tickablePriority 返回组件 Tick 顺序优先级（小值先执行）。
+// memory 先于 emotion（memory 写 BB，emotion 读 BB）；其余组件默认 99。
+func tickablePriority(name string) int {
+	switch name {
+	case "memory":
+		return 0
+	case "needs":
+		return 1
+	case "emotion":
+		return 2
+	case "movement":
+		return 3
+	default:
+		return 99
 	}
 }
 

@@ -124,7 +124,7 @@
 
 ---
 
-## T8: 删除 v2 生产路径源码 (R2, R3)
+## T8: 删除 v2 生产路径源码 (R2, R3) [x]
 
 **文件**：
 - `internal/runtime/npc/template.go`（整文件删除）

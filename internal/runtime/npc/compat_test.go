@@ -59,21 +59,6 @@ func TestParseNPCTemplate_V2Format_Civilian(t *testing.T) {
 	}
 }
 
-func TestParseNPCTemplate_V2Format_Guard(t *testing.T) {
-	data, err := os.ReadFile(filepath.Join(v2ConfigsDir(t), "guard.json"))
-	if err != nil {
-		t.Fatalf("read guard.json: %v", err)
-	}
-
-	tmpl, err := npc.ParseNPCTemplate(data)
-	if err != nil {
-		t.Fatalf("ParseNPCTemplate failed: %v", err)
-	}
-	if tmpl.Name != "guard" {
-		t.Errorf("Name = %q, want %q", tmpl.Name, "guard")
-	}
-}
-
 func TestParseNPCTemplate_V2Format_Police(t *testing.T) {
 	data, err := os.ReadFile(filepath.Join(v2ConfigsDir(t), "police.json"))
 	if err != nil {

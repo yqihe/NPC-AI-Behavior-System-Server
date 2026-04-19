@@ -1,0 +1,6 @@
+{
+  "initial_state": "wander",
+  "states": [
+    {"name": "wander"}
+  ]
+}

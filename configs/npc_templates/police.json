@@ -1,0 +1,15 @@
+{
+  "template_ref": "police",
+  "fields": {
+    "visual_range": 300,
+    "auditory_range": 800
+  },
+  "behavior": {
+    "fsm_ref": "police",
+    "bt_refs": {
+      "Idle": "police/idle",
+      "Alarmed": "police/alarmed",
+      "Engage": "police/engage"
+    }
+  }
+}

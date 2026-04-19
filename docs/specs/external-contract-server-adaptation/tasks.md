@@ -79,7 +79,7 @@
 
 ---
 
-## T7: configs 迁移 (R9, R10)
+## T7: configs 迁移 (R9, R10) [x]（与 T4 原子合并执行）
 
 **文件**：
 - `configs/npc_templates/butterfly_01.json`（rewrite 为 ADMIN shape）
@@ -97,7 +97,7 @@
 
 ---
 
-## T4: 生产路径切换到 NewInstanceFromADMIN (R1)
+## T4: 生产路径切换到 NewInstanceFromADMIN (R1) [x]（与 T7 原子合并执行）
 
 **文件**：
 - `internal/runtime/zone/zone.go`（line 55 / 60 / 77）

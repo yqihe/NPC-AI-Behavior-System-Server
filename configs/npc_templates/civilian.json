@@ -1,0 +1,16 @@
+{
+  "template_ref": "civilian",
+  "fields": {
+    "visual_range": 200,
+    "auditory_range": 500
+  },
+  "behavior": {
+    "fsm_ref": "civilian",
+    "bt_refs": {
+      "Idle": "civilian/idle",
+      "Alarmed": "civilian/alarmed",
+      "Flee": "civilian/flee",
+      "Cower": "civilian/cower"
+    }
+  }
+}

@@ -140,7 +140,7 @@
 
 ---
 
-## T9: R14 孤儿字段透传集成测试
+## T9: R14 孤儿字段透传集成测试 [x]
 
 **文件**：
 - `internal/runtime/admin_orphan_field_test.go`（新建）

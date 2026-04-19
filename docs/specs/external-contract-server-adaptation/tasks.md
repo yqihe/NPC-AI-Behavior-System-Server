@@ -111,7 +111,7 @@
 
 ---
 
-## T3: main.go 级联校验 + 双 spawn 路径收敛 (R15, R18)
+## T3: main.go 级联校验 + 双 spawn 路径收敛 (R15, R18) [x]
 
 **文件**：
 - `cmd/server/main.go`

@@ -12,6 +12,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
 // createFromTemplate 从组件化模板创建 NPC 实例
@@ -93,8 +94,12 @@ func TestComponentIntegration_ReactiveNPC_FullPipeline(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	// 创建 reactive NPC（灰狼）
-	inst := createFromTemplate(t, "wolf_1", event.Vec3{300, 0, 400}, "wolf_common", src, btReg, compReg)
+	// 创建 reactive NPC（灰狼，ADMIN shape 经 npctest 翻译）
+	inst, err := npctest.NewInstanceWithExtras("wolf_1", event.Vec3{X: 300, Z: 400},
+		wolfADMINTemplate(nil), nil, src, btReg, compReg)
+	if err != nil {
+		t.Fatalf("create wolf: %v", err)
+	}
 
 	// 验证有 behavior 和 perception 组件
 	if !inst.HasComponent("behavior") {
@@ -162,7 +167,11 @@ func TestComponentIntegration_MixedTick(t *testing.T) {
 	evtTypes := loadEvtTypes(t, src)
 
 	butterfly := createFromTemplate(t, "b1", event.Vec3{100, 5, 200}, "butterfly_01", src, btReg, compReg)
-	wolf := createFromTemplate(t, "w1", event.Vec3{300, 0, 400}, "wolf_common", src, btReg, compReg)
+	wolf, err := npctest.NewInstanceWithExtras("w1", event.Vec3{X: 300, Z: 400},
+		wolfADMINTemplate(nil), nil, src, btReg, compReg)
+	if err != nil {
+		t.Fatalf("create wolf: %v", err)
+	}
 
 	bus := event.NewBus()
 	reg := npc.NewRegistry()

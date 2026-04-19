@@ -15,6 +15,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
 // BenchmarkTick_100NPCs 验证 R14：100 NPC 单 Tick < 10ms
@@ -123,15 +124,9 @@ func BenchmarkTick_ReactiveNPC(b *testing.B) {
 	compReg := component.DefaultRegistry()
 	evtTypes := benchLoadEvtTypes(b, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		b.Fatal(err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		b.Fatal(err)
-	}
-	inst, err := npc.NewInstanceFromTemplate("bench_reactive", event.Vec3{300, 0, 400}, tmpl, compReg, src, btReg)
+	// wolf ADMIN 模板（T5 迁移；wolfADMINTemplate 在 admin_helpers_test.go）
+	inst, err := npctest.NewInstanceWithExtras("bench_reactive", event.Vec3{X: 300, Z: 400},
+		wolfADMINTemplate(nil), nil, src, btReg, compReg)
 	if err != nil {
 		b.Fatal(err)
 	}

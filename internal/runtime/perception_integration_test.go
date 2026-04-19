@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
 // --- 注意力容量裁剪 ---
@@ -22,16 +24,12 @@ func TestPerceptionIntegration_AttentionCapacity(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	// 创建 reactive NPC，attention_capacity=3
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
+	// 创建 reactive NPC，attention_capacity=3（通过 extras.perception 覆盖默认 5）
+	extras := map[string]json.RawMessage{
+		"perception": []byte(`{"visual_range":150,"auditory_range":300,"attention_capacity":3}`),
 	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-	inst, err := npc.NewInstanceFromTemplate("wolf_attn", event.Vec3{300, 0, 400}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("wolf_attn", event.Vec3{X: 300, Z: 400},
+		wolfADMINTemplate(nil), extras, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}
@@ -84,15 +82,8 @@ func TestPerceptionIntegration_ZoneIsolation(t *testing.T) {
 	evtTypes := loadEvtTypes(t, src)
 
 	// 创建 NPC 在 meadow 区域
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-	inst, err := npc.NewInstanceFromTemplate("wolf_zone", event.Vec3{300, 0, 400}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("wolf_zone", event.Vec3{X: 300, Z: 400},
+		wolfADMINTemplate(nil), nil, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}
@@ -143,15 +134,8 @@ func TestPerceptionIntegration_StrengthPassthrough(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-	inst, err := npc.NewInstanceFromTemplate("wolf_str", event.Vec3{100, 0, 100}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("wolf_str", event.Vec3{X: 100, Z: 100},
+		wolfADMINTemplate(nil), nil, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}

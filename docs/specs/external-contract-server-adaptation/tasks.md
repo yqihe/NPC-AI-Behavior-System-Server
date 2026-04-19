@@ -44,7 +44,7 @@
 
 ---
 
-## T5: 测试迁移 wolf_common 系 17 处 (R13, R21)
+## T5: 测试迁移 wolf_common 系 17 处 (R13, R21) [x]
 
 **文件**：
 - `internal/runtime/decision_integration_test.go`（4 处）

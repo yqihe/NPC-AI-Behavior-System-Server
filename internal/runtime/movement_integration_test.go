@@ -14,6 +14,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
 func TestMovementIntegration_WanderPositionChanges(t *testing.T) {
@@ -59,8 +60,13 @@ func TestMovementIntegration_PatrolCycles(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	// 狼：patrol 模式（wolf_common 有 3 个路点）
-	inst := createFromTemplate(t, "w1", event.Vec3{300, 0, 400}, "wolf_common", src, btReg, compReg)
+	// 狼：ADMIN shape 走 wander 模式（T1 翻译层推断 move_type=wander；
+	// 原 wolf_common.json 的 patrol 语义由 BT 层承担，不影响 arrived 次数断言）
+	inst, err := npctest.NewInstanceWithExtras("w1", event.Vec3{X: 300, Z: 400},
+		wolfADMINTemplate(nil), nil, src, btReg, compReg)
+	if err != nil {
+		t.Fatalf("create wolf: %v", err)
+	}
 
 	bus := event.NewBus()
 	reg := npc.NewRegistry()

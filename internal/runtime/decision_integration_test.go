@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
 // --- 需求优先：NPC 饥饿且无威胁 ---
@@ -22,22 +24,13 @@ func TestDecisionIntegration_NeedsPriority_NoThreat(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	// 创建一个有 needs + personality 的 NPC（用 wolf 模板作为基础，手动加 needs）
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
+	// 创建一个有 needs + personality 的 NPC（wolf ADMIN 模板 + extras 注入）
+	extras := map[string]json.RawMessage{
+		"needs":       []byte(`{"need_types":[{"name":"hunger","current":10,"max":100,"decay_rate":5}]}`),
+		"personality": []byte(`{"personality_type":"docile","decision_weights":{"threat":0.3,"needs":0.5,"emotion":0.2}}`),
 	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-
-	// 手动注入 needs 组件到模板
-	tmpl.Components["needs"] = []byte(`{"need_types":[{"name":"hunger","current":10,"max":100,"decay_rate":5}]}`)
-	// 修改 personality 权重让 needs 权重高
-	tmpl.Components["personality"] = []byte(`{"personality_type":"docile","decision_weights":{"threat":0.3,"needs":0.5,"emotion":0.2}}`)
-
-	inst, err := npc.NewInstanceFromTemplate("npc_hungry", event.Vec3{100, 0, 100}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("npc_hungry", event.Vec3{X: 100, Z: 100},
+		wolfADMINTemplate(nil), extras, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}
@@ -74,21 +67,12 @@ func TestDecisionIntegration_EmotionPriority_Timid(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
+	extras := map[string]json.RawMessage{
+		"personality": []byte(`{"personality_type":"timid","decision_weights":{"threat":0.2,"needs":0.2,"emotion":0.6},"flee_threshold":30}`),
+		"emotion":     []byte(`{"emotion_states":[{"name":"fear","value":80,"accumulate_rate":10,"decay_rate":1}]}`),
 	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-
-	// timid 性格：情绪权重高
-	tmpl.Components["personality"] = []byte(`{"personality_type":"timid","decision_weights":{"threat":0.2,"needs":0.2,"emotion":0.6},"flee_threshold":30}`)
-	// 高恐惧情绪
-	tmpl.Components["emotion"] = []byte(`{"emotion_states":[{"name":"fear","value":80,"accumulate_rate":10,"decay_rate":1}]}`)
-
-	inst, err := npc.NewInstanceFromTemplate("npc_timid", event.Vec3{100, 0, 100}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("npc_timid", event.Vec3{X: 100, Z: 100},
+		wolfADMINTemplate(nil), extras, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}
@@ -128,21 +112,13 @@ func TestDecisionIntegration_ThreatOverride(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
+	extras := map[string]json.RawMessage{
+		"personality": []byte(`{"personality_type":"docile","decision_weights":{"threat":0.4,"needs":0.3,"emotion":0.3}}`),
+		"needs":       []byte(`{"need_types":[{"name":"hunger","current":30,"max":100,"decay_rate":5}]}`),
+		"emotion":     []byte(`{"emotion_states":[{"name":"fear","value":40,"accumulate_rate":10,"decay_rate":1}]}`),
 	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-
-	// 均衡权重
-	tmpl.Components["personality"] = []byte(`{"personality_type":"docile","decision_weights":{"threat":0.4,"needs":0.3,"emotion":0.3}}`)
-	tmpl.Components["needs"] = []byte(`{"need_types":[{"name":"hunger","current":30,"max":100,"decay_rate":5}]}`)
-	tmpl.Components["emotion"] = []byte(`{"emotion_states":[{"name":"fear","value":40,"accumulate_rate":10,"decay_rate":1}]}`)
-
-	inst, err := npc.NewInstanceFromTemplate("npc_balanced", event.Vec3{100, 0, 100}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("npc_balanced", event.Vec3{X: 100, Z: 100},
+		wolfADMINTemplate(nil), extras, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}
@@ -178,22 +154,16 @@ func TestDecisionIntegration_DefaultWeights(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
+	// 无 personality 组件（ADMIN shape + 不 opt-in、不 extras 注入）→ 走默认权重
+	// 通过 fields 去掉 aggression 避免触发任何 personality 推断
+	tmplNoPersonality := wolfADMINTemplate(nil)
+	delete(tmplNoPersonality.Fields, "aggression")
+	extras := map[string]json.RawMessage{
+		"needs":   []byte(`{"need_types":[{"name":"hunger","current":5,"max":100,"decay_rate":5}]}`),
+		"emotion": []byte(`{"emotion_states":[{"name":"fear","value":90,"accumulate_rate":10,"decay_rate":1}]}`),
 	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-
-	// 移除 personality 组件
-	delete(tmpl.Components, "personality")
-	// 加 needs 和 emotion
-	tmpl.Components["needs"] = []byte(`{"need_types":[{"name":"hunger","current":5,"max":100,"decay_rate":5}]}`)
-	tmpl.Components["emotion"] = []byte(`{"emotion_states":[{"name":"fear","value":90,"accumulate_rate":10,"decay_rate":1}]}`)
-
-	inst, err := npc.NewInstanceFromTemplate("npc_nopersonality", event.Vec3{100, 0, 100}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("npc_nopersonality", event.Vec3{X: 100, Z: 100},
+		tmplNoPersonality, extras, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}

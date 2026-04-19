@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
 // --- 事件→记忆→情绪链路 ---
@@ -22,20 +24,12 @@ func TestMemoryIntegration_EventToMemoryToEmotion(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
+	extras := map[string]json.RawMessage{
+		"memory":  []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":30}`),
+		"emotion": []byte(`{"emotion_states":[{"name":"fear","value":0,"accumulate_rate":20,"decay_rate":5}]}`),
 	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-
-	// 添加 memory + emotion 组件
-	tmpl.Components["memory"] = []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":30}`)
-	tmpl.Components["emotion"] = []byte(`{"emotion_states":[{"name":"fear","value":0,"accumulate_rate":20,"decay_rate":5}]}`)
-
-	inst, err := npc.NewInstanceFromTemplate("wolf_mem", event.Vec3{100, 0, 100}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("wolf_mem", event.Vec3{X: 100, Z: 100},
+		wolfADMINTemplate(nil), extras, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}
@@ -78,19 +72,12 @@ func TestMemoryIntegration_MemoryExpiry_EmotionRecovery(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
+	extras := map[string]json.RawMessage{
+		"memory":  []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":2}`), // 短 TTL
+		"emotion": []byte(`{"emotion_states":[{"name":"fear","value":50,"accumulate_rate":10,"decay_rate":20}]}`),
 	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-
-	tmpl.Components["memory"] = []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":2}`) // 短 TTL
-	tmpl.Components["emotion"] = []byte(`{"emotion_states":[{"name":"fear","value":50,"accumulate_rate":10,"decay_rate":20}]}`)
-
-	inst, err := npc.NewInstanceFromTemplate("wolf_expire", event.Vec3{100, 0, 100}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("wolf_expire", event.Vec3{X: 100, Z: 100},
+		wolfADMINTemplate(nil), extras, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}
@@ -142,18 +129,11 @@ func TestMemoryIntegration_RepeatedStimulus_Reinforcement(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
+	extras := map[string]json.RawMessage{
+		"memory": []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":60}`),
 	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-
-	tmpl.Components["memory"] = []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":60}`)
-
-	inst, err := npc.NewInstanceFromTemplate("wolf_reinforce", event.Vec3{100, 0, 100}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("wolf_reinforce", event.Vec3{X: 100, Z: 100},
+		wolfADMINTemplate(nil), extras, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create instance: %v", err)
 	}

@@ -111,7 +111,7 @@ go test ./...                                  # 全绿，新 NPC 被 zone spawn
 - **R1**：`internal/runtime/npc/admin_template.go` 是 NPC 实例创建的**唯一**对外入口，暴露 `NewInstanceFromADMIN(id, pos, tmpl, src, btReg) (*Instance, error)`；任何调用方（zone / handler / main / 测试）不得直接构造 `Instance`
 - **R2**：删除 `internal/runtime/npc/template.go` 中的 `TemplateConfig` struct 与 `NewInstanceFromTemplate` 函数
 - **R3**：删除 `internal/runtime/npc/compat.go`（`ParseNPCTemplate` + `convertV2Format`）
-- **R4**：删除 `NPCTypeConfig`（v2）及所有加载器（`Source.LoadNPCTypeConfig` 接口方法、JSONSource / MongoSource / HTTPSource 的对应实现）
+- **R4**：删除 `NPCTypeConfig`（v2）在**生产 spawn 路径**（`zone/zone.go` / `gateway/handler.go` / `main.go`）的所有调用点。**保留** `NPCTypeConfig` struct、`ParseNPCTypeConfig` 函数、`Source.LoadNPCTypeConfig` 接口方法、3 个 Source 实现——供实验层（`internal/experiment/`）与测试层（integration / benchmark / source contract test）消费。NPCTypeConfig 是"本地 V2 fixture API"，不作为 production NPC 创建路径；R1 "NewInstanceFromADMIN 是唯一生产入口"语义不变。Phase 2 修正记录：原草案"全删 API"会击穿 `hybrid.go`（毕设 measurement framework 核心）+ 多处 e2e/integration 测试，属需求偏差
 - **R5**：`component.Registry` **保留全量 13 个 factory**。5 个能力 component（memory / emotion / needs / personality / social）的实例化由 R17 opt-in 契约驱动——factory 不删除，但默认不调用
 
 ### 翻译层行为
@@ -123,7 +123,7 @@ go test ./...                                  # 全绿，新 NPC 被 zone spawn
 ### 配置
 
 - **R9**：`configs/npc_templates/butterfly_01.json` 与 `wolf_common.json` 重写为 ADMIN 形状 `{template_ref, fields, behavior}`
-- **R10**：删除 `configs/npc_types/` 目录
+- **R10**：删除 `configs/npc_types/guard.json`（compat_test.go 同步删除后无 Go 消费者）+ `configs/bt_trees/guard/{alert,defend}.json`。**保留** `configs/npc_types/{civilian,police}.json`——civilian 是实验层（`hybrid.go` / `pure_fsm.go` / `fsm_dc.go`）+ 多处测试依赖，police 是 `test/e2e/extension_test.go` **扩展轴 2 演示核心**（police spawn → explosion → Engage 响应，对比 civilian Flee，证明"加 NPC 类型零代码"）。相应保留 `configs/fsm/{civilian,police}.json` + `configs/bt_trees/{civilian,police}/` 整目录。Phase 2 修正记录（两轮）：原草案整删目录；第一轮 grep 未覆盖 test/e2e/ 未纠正 civilian；第二轮补查发现 police 同类漏删。**Recurrent gap 教训**：声明"零消费者"前，grep 必须覆盖 `internal/` + `test/e2e/` + `internal/experiment/` + `docs/specs/` 全域
 - **R11**：`go run ./cmd/sync -api http://localhost:9821` 执行后 `configs/` 全量改动可直接 `git add` 提交，不需人工编辑
 
 ### 测试

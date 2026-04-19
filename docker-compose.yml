@@ -1,6 +1,8 @@
 services:
   server:
-    build: .
+    build:
+      context: .
+      network: host
     ports:
       - "${NPC_PORT:-9820}:9820"
     volumes:

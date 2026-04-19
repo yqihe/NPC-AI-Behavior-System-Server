@@ -15,44 +15,28 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
-// createFromTemplate 从组件化模板创建 NPC 实例
-func createFromTemplate(t *testing.T, id string, pos event.Vec3, templateName string, src config.Source, btReg *bt.Registry, compReg *component.Registry) *npc.Instance {
-	t.Helper()
-	raw, err := src.LoadNPCTemplate(templateName)
-	if err != nil {
-		t.Fatalf("load template %q: %v", templateName, err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template %q: %v", templateName, err)
-	}
-	inst, err := npc.NewInstanceFromTemplate(id, pos, tmpl, compReg, src, btReg)
-	if err != nil {
-		t.Fatalf("create from template %q: %v", templateName, err)
-	}
-	return inst
-}
-
-// --- 场景：simple NPC 不走 AI 管线 ---
-
+// --- 场景：passive NPC（perception_range=0）不感知事件 ---
+//
+// ADMIN 模型下所有 NPC 都装备 5 默认组件（含 behavior + perception）。
+// "simple" 语义从"组件缺失"演变为"组件被动化"——本测试以 perception_range=0
+// 的 butterfly 展示 passive NPC 不累积威胁、movement 正常 tick 的不变量。
 func TestComponentIntegration_SimpleNPC_NoAIPipeline(t *testing.T) {
 	src := config.NewJSONSource(configsDir(t))
 	btReg := bt.DefaultRegistry()
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	// 创建 simple NPC（蝴蝶，无 behavior/perception）
-	inst := createFromTemplate(t, "butterfly_1", event.Vec3{100, 5, 200}, "butterfly_01", src, btReg, compReg)
+	// passive butterfly：感知范围 0 → 任何事件都不入感知
+	inst, err := npctest.NewInstanceWithExtras("butterfly_1", event.Vec3{X: 100, Z: 200},
+		butterflyADMINTemplate(map[string]any{"perception_range": 0.0}),
+		nil, src, btReg, compReg)
+	if err != nil {
+		t.Fatalf("create butterfly: %v", err)
+	}
 
-	// 验证没有 behavior 和 perception 组件
-	if inst.HasComponent("behavior") {
-		t.Error("simple NPC should not have behavior component")
-	}
-	if inst.HasComponent("perception") {
-		t.Error("simple NPC should not have perception component")
-	}
+	// 5 默认组件在 ADMIN 模型下无条件装备
 	if !inst.HasComponent("movement") {
-		t.Error("simple NPC should have movement component")
+		t.Error("butterfly should have movement component")
 	}
 
 	// 创建 Scheduler 并 Tick
@@ -62,21 +46,20 @@ func TestComponentIntegration_SimpleNPC_NoAIPipeline(t *testing.T) {
 	dec := decision.NewCenter(10.0)
 	sched := runtime.NewScheduler(bus, reg, dec, evtTypes, 100*time.Millisecond)
 
-	// 发布事件
+	// 发布事件（尽管近，perception_range=0 令其超出感知）
 	explosionCfg := evtTypes["explosion"]
 	evt := event.NewEvent(explosionCfg, event.Vec3{100, 0, 200}, "bomb_1", 80, "")
 	bus.Publish(evt)
 
-	// Tick
 	sched.Tick(0.1)
 
-	// simple NPC 不应有威胁（跳过了感知和决策）
+	// passive NPC 不应累积威胁（perception_range=0 结构性屏蔽）
 	level, _ := blackboard.Get(inst.BB, blackboard.KeyThreatLevel)
 	if level != 0 {
-		t.Errorf("simple NPC should have threat_level 0, got %f", level)
+		t.Errorf("passive NPC (perception_range=0) should have threat_level 0, got %f", level)
 	}
 
-	// movement 组件应该被 Tick（写了 move_state）
+	// movement 组件应该被 Tick
 	moveState, ok := blackboard.Get(inst.BB, blackboard.KeyMoveState)
 	if !ok {
 		t.Error("move_state should be set by movement Tick")
@@ -166,7 +149,11 @@ func TestComponentIntegration_MixedTick(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	butterfly := createFromTemplate(t, "b1", event.Vec3{100, 5, 200}, "butterfly_01", src, btReg, compReg)
+	butterfly, err := npctest.NewInstanceWithExtras("b1", event.Vec3{X: 100, Z: 200},
+		butterflyADMINTemplate(nil), nil, src, btReg, compReg)
+	if err != nil {
+		t.Fatalf("create butterfly: %v", err)
+	}
 	wolf, err := npctest.NewInstanceWithExtras("w1", event.Vec3{X: 300, Z: 400},
 		wolfADMINTemplate(nil), nil, src, btReg, compReg)
 	if err != nil {

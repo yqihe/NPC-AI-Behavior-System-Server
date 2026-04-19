@@ -92,21 +92,15 @@ func TestTick_100NPCs_Under10ms(t *testing.T) {
 	}
 }
 
-// BenchmarkTick_SimpleNPC 只有 identity+position+movement 的 NPC，单 Tick 目标 < 1μs
+// BenchmarkTick_SimpleNPC passive butterfly NPC（ADMIN 模型下仍装备 5 默认组件），
+// 单 Tick 组件耗时。名称保留 SimpleNPC 指代其 passive 语义，非组件精简。
 func BenchmarkTick_SimpleNPC(b *testing.B) {
 	src := config.NewJSONSource(benchConfigsDir(b))
 	btReg := bt.DefaultRegistry()
 	compReg := component.DefaultRegistry()
 
-	raw, err := src.LoadNPCTemplate("butterfly_01")
-	if err != nil {
-		b.Fatal(err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		b.Fatal(err)
-	}
-	inst, err := npc.NewInstanceFromTemplate("bench_simple", event.Vec3{}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("bench_simple", event.Vec3{},
+		butterflyADMINTemplate(nil), nil, src, btReg, compReg)
 	if err != nil {
 		b.Fatal(err)
 	}

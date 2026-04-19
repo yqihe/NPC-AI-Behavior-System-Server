@@ -13,8 +13,21 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/zone"
 )
+
+// butterflyInstance 为 zone 测试构造 butterfly NPC（走 npctest 路径，
+// 不再依赖 configs/npc_templates/butterfly_01.json）
+func butterflyInstance(t *testing.T, id string, pos event.Vec3, src config.Source, btReg *bt.Registry, compReg *component.Registry) *npc.Instance {
+	t.Helper()
+	inst, err := npctest.NewInstanceWithExtras(id, pos, butterflyADMINTemplate(nil),
+		nil, src, btReg, compReg)
+	if err != nil {
+		t.Fatalf("create butterfly %s: %v", id, err)
+	}
+	return inst
+}
 
 // --- 休眠区域 NPC 不 Tick ---
 
@@ -25,8 +38,8 @@ func TestZoneIntegration_SleepSkipsTick(t *testing.T) {
 	evtTypes := loadEvtTypes(t, src)
 
 	// 创建两个 NPC：一个在 meadow（将休眠），一个在 forest（活跃）
-	meadowNPC := createFromTemplate(t, "m1", event.Vec3{100, 0, 200}, "butterfly_01", src, btReg, compReg)
-	forestNPC := createFromTemplate(t, "f1", event.Vec3{300, 0, 400}, "butterfly_01", src, btReg, compReg)
+	meadowNPC := butterflyInstance(t, "m1", event.Vec3{X: 100, Z: 200}, src, btReg, compReg)
+	forestNPC := butterflyInstance(t, "f1", event.Vec3{X: 300, Z: 400}, src, btReg, compReg)
 
 	// 手动设 zone_id
 	if pos, ok := npc.GetComponent[*component.PositionComponent](meadowNPC, "position"); ok {
@@ -87,7 +100,7 @@ func TestZoneIntegration_WakeResumes(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	inst := createFromTemplate(t, "b1", event.Vec3{100, 0, 200}, "butterfly_01", src, btReg, compReg)
+	inst := butterflyInstance(t, "b1", event.Vec3{X: 100, Z: 200}, src, btReg, compReg)
 	if pos, ok := npc.GetComponent[*component.PositionComponent](inst, "position"); ok {
 		pos.ZoneID = "meadow"
 	}

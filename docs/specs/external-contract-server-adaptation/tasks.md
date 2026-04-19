@@ -64,7 +64,7 @@
 
 ---
 
-## T6: 测试迁移 butterfly_01 系 8 处 (R13)
+## T6: 测试迁移 butterfly_01 系 8 处 (R13) [x]
 
 **文件**：
 - `internal/runtime/zone_integration_test.go`（3 处）

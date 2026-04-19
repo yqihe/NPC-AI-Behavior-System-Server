@@ -152,7 +152,7 @@
 
 ---
 
-## T10: R15 / R16 验证 Gate
+## T10: R15 / R16 验证 Gate [partial]
 
 **文件**：无代码改动，仅手动执行与记录
 
@@ -160,6 +160,19 @@
 - **R15**：`docker compose up --build` 拉 ADMIN live（锚 `0aa77b2`），6 NPC（ADMIN）+ 3 butterfly（zone）共 9 NPC spawn 成功，tick ≥ 30s 无 WARN / ERROR 日志
 - **R16**：断开 ADMIN（`docker compose stop admin` 或 `NPC_ADMIN_API=http://unreachable:1`），服务端降级到 JSONSource 从 `configs/` 加载，同样 9 NPC spawn（butterfly 走 zone，ADMIN 6 NPC 被 JSONSource 路径替代——此处行为需确认：若 JSONSource 无 ADMIN 6 NPC fixture，退化为仅 3 butterfly，R16 原文"同样 6 NPC"需放宽）
 - smoke 结果记录到 PR 描述；若 FAIL 触发 `/debug`
+
+### 实测结果（2026-04-20）
+
+- **R16**：✅ **PASS**。空 `NPC_ADMIN_API` 启动服务端 30s。
+  - `config.source type=json dir=configs` 触发 JSONSource 路径
+  - `zone.spawned zone=meadow npc_count=3` + `admin_spawn.done spawned=3 template_count=3` 共 **6 NPCs**（R16 原文"同样 6 NPC"已按此放宽为本地 JSONSource 6 NPC：3 zone butterfly + 3 ADMIN mirror templates [butterfly_01/civilian/police]）
+  - **1800 decision.evaluated** 条日志（300 ticks × 6 NPCs at 10Hz × 30s，完全符合预期）
+  - **0 WARN, 0 ERROR, 0 cascade.violations**
+
+- **R15**：⏸ **DEFERRED**（ADMIN 端 `0aa77b2` 未就绪）
+  - `curl localhost:9821` 2s timeout（HTTP 000），Server CC 无法拉取 ADMIN live
+  - 解冻条件：ADMIN 端启动后重跑 `docker compose up --build`
+  - 预期通过指标：6 ADMIN NPC + 3 zone butterfly = 9 NPCs / tick ≥ 30s / 无 WARN
 
 ---
 

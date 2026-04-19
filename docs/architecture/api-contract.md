@@ -8,7 +8,7 @@
 - 服务端仓发 PR 时 description 引用 ADMIN 对应 commit hash 作为契约版本锚
 - 若 ADMIN 改契约未通知服务端，由 `docs/development/standards/red-lines/general.md` "禁止协作失序"红线兜底
 
-**当前版本**：v1 初稿（2026-04-19，对齐 `docs/specs/external-contract-admin-shape-alignment/` 交付）
+**当前版本**：v1.1（2026-04-19，新增组件 opt-in 依赖矩阵；对齐服务端仓 spec `external-contract-server-adaptation` R17-R21）
 
 **当前仅覆盖**：`GET /api/configs/npc_templates`。其他导出接口（event_types / fsm_configs / bt_trees / regions）按实际契约演进再补。
 
@@ -86,6 +86,66 @@
 - `behavior.fsm_ref` / `behavior.bt_refs` 的 omitempty 语义切换（必填化或删除）
 
 **非 breaking change**（免通知）：新增 `items[].config.*` 下的可选字段（带 omitempty）、字段值类型在兼容子集内调整（如 int↔float 表示的同数值）。
+
+### 组件 opt-in 依赖矩阵（v1.1 新增）
+
+#### 5 个 opt-in bool 字段
+
+ADMIN `items[].config.fields` 中**约定的 5 个 bool 字段**控制服务端侧能力组件实例化：
+
+| 字段名 | 语义 | default_value | absent 时 |
+|---|---|---|---|
+| `enable_memory` | 记忆组件：写入威胁记忆 → 驱动 emotion | `false`（必填）| 等价 false |
+| `enable_emotion` | 情绪组件：读记忆累积 fear → 驱动 decision | `false`（必填）| 等价 false |
+| `enable_needs` | 需求组件：计算 lowest need → 驱动 decision | `false`（必填）| 等价 false |
+| `enable_personality` | 性格组件：提供 decision weights 覆盖默认值 | `false`（必填）| 等价 false |
+| `enable_social` | 社交组件：group/follower/leader 机制 | `false`（必填）| 等价 false |
+
+**absent ≡ false 语义锁定**：字段缺失等价显式 `false`，避免"未声明 vs 显式关闭"歧义。
+
+**ADMIN seed 强制要求**：5 个 bool field 的 `properties.default_value` 必须显式设为 `false`，确保新建 NPC 携带 false 而非 null。若存 null，导出时字段会变为 `null` 而非 `false`，服务端解析歧义。
+
+#### 级联依赖（硬约束）
+
+| 如启用 | 必须同时启用 | 校验位置 | 违规后果 |
+|---|---|---|---|
+| `enable_emotion` | `enable_memory` | 服务端启动 Registry 填充阶段，**逐 NPC** 校验 | **Fatal**：打印违规 NPC name 列表 + ADMIN UI 修正路径，**不跳过违规 NPC、不部分启动** |
+
+**根因**：`emotion.Tick()` 读 `KeyMemoryThreatValue`（由 `memory.Tick()` 写入）；无 memory 则 emotion.fear 永不累积 → emotion 独立开启无意义。
+
+**ADMIN 侧已知缺陷**：ADMIN 字段系统当前不支持跨字段联动校验（见 `deferred-features.md`），运营侧可以保存 `enable_emotion=true, enable_memory=false` 的非法组合。服务端兜底 fatal 校验承担此约束。
+
+#### 其他组件的独立性
+
+| 组合 | 级别 | 说明 |
+|---|---|---|
+| `enable_needs` 单开 | ⚠️ 弱耦合警告 | `personality.weights.Needs` 失去乘数意义，但不违法 |
+| `enable_personality` 单开 | ✅ 合法 | 无 BB 链路，decision 用自定义 weights 但 NeedUrgency=0 |
+| `enable_social` 单开 | ✅ 合法 | 完全独立，只影响 group 可见性 |
+
+#### 组件缺席时的系统行为
+
+服务端必须保证**任意组合缺席下 Tick 不崩溃**。当前实现已合规，契约要求不退化：
+
+| 缺席组件 | 直接效果 | 可观测二阶效果 |
+|---|---|---|
+| memory | `KeyMemoryThreatValue` unset | emotion.fear 衰减到 0（若 emotion 开） |
+| emotion | `KeyEmotionDominant/Val` unset | `scheduler.buildDecisionInput.EmotionValue=0` |
+| needs | `KeyNeedLowest/Val` unset | `scheduler.calcNeedUrgency=0` → `decision.NeedUrgency=0` |
+| personality | 无 BB 影响 | `decision.Weights` 用 `decision.DefaultWeights`（Threat/Needs/Emotion 各为 1）|
+| social | `KeyGroupID/SocialRole` unset | `GroupManager` 对该 NPC 不可见（逐 NPC 跳过，不影响其他 NPC） |
+
+**服务端实现准入模式**：所有组件访问点通过 `npc.GetComponent[T](inst, name)` 的 `(T, ok)` 返回值决策。**禁止**裸 nil 访问、类型断言 panic、或整体禁用系统。当前生产代码面 12 处访问全部合规（`scheduler.go` 7 处 + `group_manager.go` 4 处 + `gateway/handler.go` 1 处）。
+
+#### 软/硬依赖契约
+
+- **软依赖（允许）**：组件 X 读取组件 Y 写入的 BB key（如 emotion 读 `KeyMemoryThreatValue`）。Y 缺席时 X 必须降级到默认值，不得阻塞 tick 或 panic
+
+- **硬依赖（禁止）**：**组件代码内部**出现 `GetComponent[Y]` 访问其他组件类型 Y。例如 `emotion.Tick()` 里调用 `GetComponent[*MemoryComponent](inst, "memory")` 属违规
+
+- **编排层例外**：scheduler / gateway / group_manager 等**编排器**对组件的直接访问是组件化架构的合法协调机制——编排层的核心职责就是把组件粘合起来。此类访问**不计入硬依赖**，也不构成技术债
+
+- **当前全部合规**：scheduler.go（7）+ group_manager.go（4）+ gateway/handler.go（1）共 **12 处组件访问全部位于编排层**，无组件间硬依赖违规。服务端代码已遵循"编排层协调组件 / 组件间只通过 BB 交互"的双层架构原则
 
 ### 已知数据噪声
 

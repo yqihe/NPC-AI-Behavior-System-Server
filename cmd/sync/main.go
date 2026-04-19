@@ -42,7 +42,7 @@ var categories = []configCategory{
 	{"event_types", "/api/configs/event_types", "events"},
 	{"fsm_configs", "/api/configs/fsm_configs", "fsm"},
 	{"bt_trees", "/api/configs/bt_trees", "bt_trees"},
-	{"npc_types", "/api/configs/npc_types", "npc_types"},
+	{"npc_templates", "/api/configs/npc_templates", "npc_templates"},
 }
 
 func main() {

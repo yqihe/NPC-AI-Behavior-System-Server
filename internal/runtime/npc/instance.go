@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log/slog"
+	"sort"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
@@ -144,6 +145,33 @@ func (inst *Instance) SyncPosition() {
 			p.Z = z
 		}
 	}
+}
+
+// InjectComponentForTest 追加或替换组件并重建 tickables 排序。
+//
+// **仅供 npctest 子包使用**（R21 封闭红线）。生产代码调用此方法会绕过
+// R17 opt-in 契约与 R18 级联校验。通过 `internal/runtime/npc/npctest`
+// 子包包装，方便 grep 审计；手动调用从生产路径调用违反 red-lines.md。
+func (inst *Instance) InjectComponentForTest(name string, comp component.Component) {
+	if inst.components == nil {
+		inst.components = make(map[string]component.Component)
+	}
+	inst.components[name] = comp
+
+	// 移除旧同名 tickable（如果有）并重建列表
+	filtered := inst.tickables[:0]
+	for _, t := range inst.tickables {
+		if t.Name() != name {
+			filtered = append(filtered, t)
+		}
+	}
+	inst.tickables = filtered
+	if t, ok := comp.(component.Tickable); ok {
+		inst.tickables = append(inst.tickables, t)
+	}
+	sort.SliceStable(inst.tickables, func(i, j int) bool {
+		return tickablePriority(inst.tickables[i].Name()) < tickablePriority(inst.tickables[j].Name())
+	})
 }
 
 // GetComponent 类型安全获取组件

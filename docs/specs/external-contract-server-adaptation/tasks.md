@@ -25,7 +25,7 @@
 
 ---
 
-## T2: npctest 子包建立 (R21)
+## T2: npctest 子包建立 (R21) [x]
 
 **文件**：
 - `internal/runtime/npc/npctest/helpers.go`（新建）

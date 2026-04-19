@@ -1,7 +1,6 @@
 package zone
 
 import (
-	"encoding/json"
 	"fmt"
 	"log/slog"
 
@@ -38,7 +37,7 @@ type Zone struct {
 	npcs       []string     // 该区域的 NPC ID 列表
 }
 
-// Spawn 从 spawn_table 批量创建 NPC
+// Spawn 从 spawn_table 批量创建 NPC（走 ADMIN 翻译层，R1 唯一生产入口）
 func (z *Zone) Spawn(compReg *component.Registry, src config.Source, btReg *bt.Registry, npcReg *npc.Registry, gm *social.GroupManager) error {
 	for _, entry := range z.SpawnTable {
 		if len(entry.SpawnPoints) == 0 {
@@ -49,34 +48,24 @@ func (z *Zone) Spawn(compReg *component.Registry, src config.Source, btReg *bt.R
 			sp := entry.SpawnPoints[i%len(entry.SpawnPoints)]
 			pos := event.Vec3{X: sp.X, Z: sp.Z}
 
-			// 加载模板（先新格式，降级旧格式）
 			raw, err := src.LoadNPCTemplate(entry.TemplateRef)
 			if err != nil {
-				raw, err = src.LoadNPCTypeConfig(entry.TemplateRef)
-				if err != nil {
-					return fmt.Errorf("zone %s: load template %q: %w", z.ID, entry.TemplateRef, err)
-				}
+				return fmt.Errorf("zone %s: load template %q: %w", z.ID, entry.TemplateRef, err)
 			}
-			tmpl, err := npc.ParseNPCTemplate(raw)
+			tmpl, err := npc.ParseADMINTemplate(entry.TemplateRef, raw)
 			if err != nil {
 				return fmt.Errorf("zone %s: parse template %q: %w", z.ID, entry.TemplateRef, err)
 			}
 
-			// 注入 zone_id 到 position 组件
-			if posRaw, ok := tmpl.Components["position"]; ok {
-				var posData map[string]any
-				if err := json.Unmarshal(posRaw, &posData); err == nil {
-					posData["zone_id"] = z.ID
-					if newRaw, err := json.Marshal(posData); err == nil {
-						tmpl.Components["position"] = newRaw
-					}
-				}
-			}
-
 			id := fmt.Sprintf("%s_%s_%d", z.ID, entry.TemplateRef, i)
-			inst, err := npc.NewInstanceFromTemplate(id, pos, tmpl, compReg, src, btReg)
+			inst, err := npc.NewInstanceFromADMIN(id, pos, tmpl, src, btReg, compReg)
 			if err != nil {
 				return fmt.Errorf("zone %s: create NPC %q: %w", z.ID, id, err)
+			}
+
+			// 注入 zone_id 到 position 组件（ADMIN fields 无 zone_id；由 region spawn 链路注入）
+			if posComp, ok := npc.GetComponent[*component.PositionComponent](inst, "position"); ok {
+				posComp.ZoneID = z.ID
 			}
 
 			npcReg.Add(inst)

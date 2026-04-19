@@ -15,6 +15,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
 // BenchmarkTick_100NPCs 验证 R14：100 NPC 单 Tick < 10ms
@@ -91,21 +92,15 @@ func TestTick_100NPCs_Under10ms(t *testing.T) {
 	}
 }
 
-// BenchmarkTick_SimpleNPC 只有 identity+position+movement 的 NPC，单 Tick 目标 < 1μs
+// BenchmarkTick_SimpleNPC passive butterfly NPC（ADMIN 模型下仍装备 5 默认组件），
+// 单 Tick 组件耗时。名称保留 SimpleNPC 指代其 passive 语义，非组件精简。
 func BenchmarkTick_SimpleNPC(b *testing.B) {
 	src := config.NewJSONSource(benchConfigsDir(b))
 	btReg := bt.DefaultRegistry()
 	compReg := component.DefaultRegistry()
 
-	raw, err := src.LoadNPCTemplate("butterfly_01")
-	if err != nil {
-		b.Fatal(err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		b.Fatal(err)
-	}
-	inst, err := npc.NewInstanceFromTemplate("bench_simple", event.Vec3{}, tmpl, compReg, src, btReg)
+	inst, err := npctest.NewInstanceWithExtras("bench_simple", event.Vec3{},
+		butterflyADMINTemplate(nil), nil, src, btReg, compReg)
 	if err != nil {
 		b.Fatal(err)
 	}
@@ -123,15 +118,9 @@ func BenchmarkTick_ReactiveNPC(b *testing.B) {
 	compReg := component.DefaultRegistry()
 	evtTypes := benchLoadEvtTypes(b, src)
 
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		b.Fatal(err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		b.Fatal(err)
-	}
-	inst, err := npc.NewInstanceFromTemplate("bench_reactive", event.Vec3{300, 0, 400}, tmpl, compReg, src, btReg)
+	// wolf ADMIN 模板（T5 迁移；wolfADMINTemplate 在 admin_helpers_test.go）
+	inst, err := npctest.NewInstanceWithExtras("bench_reactive", event.Vec3{X: 300, Z: 400},
+		wolfADMINTemplate(nil), nil, src, btReg, compReg)
 	if err != nil {
 		b.Fatal(err)
 	}

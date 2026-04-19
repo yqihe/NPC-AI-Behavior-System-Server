@@ -111,9 +111,17 @@ func main() {
 	}
 	slog.Info("zones.loaded", "count", zm.Count())
 
-	// 4b. 无 zones 且有 ADMIN 模板时的回退 spawn：每模板 1 个实例于网格位置
-	if zm.Count() == 0 {
-		spawnFromADMINTemplates(src, btReg, reg)
+	// 4b. ADMIN 模板 spawn（与 zone spawn 并行触发；design §1.3 双路径收敛 R15）
+	spawnFromADMINTemplates(src, btReg, compReg, reg)
+
+	// 4c. R18 级联依赖校验：enable_emotion=true ∧ enable_memory=false 违规 → fatal
+	if violations := validateCascadeDependencies(reg); len(violations) > 0 {
+		slog.Error("cascade.violations",
+			"count", len(violations),
+			"npc_ids", violations,
+			"fix_path", "ADMIN UI → 模板 → 能力开关 → enable_memory 打开（emotion 依赖 memory）",
+		)
+		os.Exit(1)
 	}
 
 	// 5. 初始化 Gateway
@@ -198,10 +206,25 @@ func initLogger(level, format string) {
 	slog.SetDefault(slog.New(handler))
 }
 
+// validateCascadeDependencies 遍历 Registry 逐 NPC 检查 R18 组件级联违规。
+// 当前仅一条硬依赖：emotion 需要 memory（emotion.Tick 读 KeyMemoryThreatValue
+// 由 memory.Tick 写入）。违规 NPC ID 列表返回给调用方；非空则 main 退出。
+// 校验基于 Instance.HasComponent — 组件存在等价于 R17 opt-in 加载时
+// enable_*=true，与 ADMIN fields.enable_* 语义等价。
+func validateCascadeDependencies(reg *npc.Registry) []string {
+	var violations []string
+	reg.ForEach(func(inst *npc.Instance) {
+		if inst.HasComponent("emotion") && !inst.HasComponent("memory") {
+			violations = append(violations, inst.ID)
+		}
+	})
+	return violations
+}
+
 // spawnFromADMINTemplates 从 ADMIN 形状模板批量 spawn NPC。
 // 每个模板创建 1 个实例，按索引排布在 10m 网格上（y=0 平面）。
 // 无模板时无副作用。模板解析/创建失败逐条告警不中断。
-func spawnFromADMINTemplates(src config.Source, btReg *bt.Registry, reg *npc.Registry) {
+func spawnFromADMINTemplates(src config.Source, btReg *bt.Registry, compReg *component.Registry, reg *npc.Registry) {
 	tmpls, err := src.LoadAllNPCTemplates()
 	if err != nil {
 		slog.Warn("admin_spawn.load_error", "err", err)
@@ -220,7 +243,7 @@ func spawnFromADMINTemplates(src config.Source, btReg *bt.Registry, reg *npc.Reg
 			continue
 		}
 		pos := event.Vec3{X: float64(idx%10) * 10, Z: float64(idx/10) * 10}
-		inst, err := npc.NewInstanceFromADMIN(fmt.Sprintf("%s_%d", name, idx), pos, tmpl, src, btReg)
+		inst, err := npc.NewInstanceFromADMIN(fmt.Sprintf("%s_%d", name, idx), pos, tmpl, src, btReg, compReg)
 		if err != nil {
 			slog.Warn("admin_spawn.instance_error", "template", name, "err", err)
 			continue

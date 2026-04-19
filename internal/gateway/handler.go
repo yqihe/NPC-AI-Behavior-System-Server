@@ -64,21 +64,16 @@ func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Re
 
 		pos := event.Vec3{X: req.X, Z: req.Z}
 
-		// 尝试加载配置：先新格式（npc_templates），再旧格式（npc_types）
+		// 加载 ADMIN shape 模板（R1 唯一生产入口）
 		rawCfg, err := src.LoadNPCTemplate(req.TypeName)
 		if err != nil {
-			// 降级到旧格式
-			rawCfg, err = src.LoadNPCTypeConfig(req.TypeName)
-			if err != nil {
-				slog.Warn("handler.spawn_npc.load_config", "type", req.TypeName, "err", err)
-				resp, _ := protocol.NewError(msg.ID, "config_error", "failed to load NPC type: "+req.TypeName)
-				conn.sendMsg(resp)
-				return nil
-			}
+			slog.Warn("handler.spawn_npc.load_config", "type", req.TypeName, "err", err)
+			resp, _ := protocol.NewError(msg.ID, "config_error", "failed to load NPC type: "+req.TypeName)
+			conn.sendMsg(resp)
+			return nil
 		}
 
-		// 统一解析（自动检测新旧格式）
-		tmpl, err := npc.ParseNPCTemplate(rawCfg)
+		tmpl, err := npc.ParseADMINTemplate(req.TypeName, rawCfg)
 		if err != nil {
 			slog.Warn("handler.spawn_npc.parse_config", "type", req.TypeName, "err", err)
 			resp, _ := protocol.NewError(msg.ID, "config_error", "failed to parse NPC config")
@@ -86,8 +81,7 @@ func makeSpawnNPCHandler(registry *npc.Registry, src config.Source, btReg *bt.Re
 			return nil
 		}
 
-		// 创建组件化 NPC 实例
-		inst, err := npc.NewInstanceFromTemplate(req.NpcID, pos, tmpl, compReg, src, btReg)
+		inst, err := npc.NewInstanceFromADMIN(req.NpcID, pos, tmpl, src, btReg, compReg)
 		if err != nil {
 			slog.Warn("handler.spawn_npc.create", "npc_id", req.NpcID, "err", err)
 			resp, _ := protocol.NewError(msg.ID, "create_error", "failed to create NPC instance")

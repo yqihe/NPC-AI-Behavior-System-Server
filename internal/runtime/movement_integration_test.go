@@ -14,6 +14,7 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 )
 
 func TestMovementIntegration_WanderPositionChanges(t *testing.T) {
@@ -22,8 +23,12 @@ func TestMovementIntegration_WanderPositionChanges(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	// 蝴蝶：wander 模式
-	inst := createFromTemplate(t, "b1", event.Vec3{100, 5, 200}, "butterfly_01", src, btReg, compReg)
+	// 蝴蝶：wander 模式（ADMIN shape，T1 翻译层推断 move_type=wander）
+	inst, err := npctest.NewInstanceWithExtras("b1", event.Vec3{X: 100, Z: 200},
+		butterflyADMINTemplate(nil), nil, src, btReg, compReg)
+	if err != nil {
+		t.Fatalf("create butterfly: %v", err)
+	}
 	spawnX, spawnZ := 100.0, 200.0
 
 	bus := event.NewBus()
@@ -59,8 +64,13 @@ func TestMovementIntegration_PatrolCycles(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	// 狼：patrol 模式（wolf_common 有 3 个路点）
-	inst := createFromTemplate(t, "w1", event.Vec3{300, 0, 400}, "wolf_common", src, btReg, compReg)
+	// 狼：ADMIN shape 走 wander 模式（T1 翻译层推断 move_type=wander；
+	// 原 wolf_common.json 的 patrol 语义由 BT 层承担，不影响 arrived 次数断言）
+	inst, err := npctest.NewInstanceWithExtras("w1", event.Vec3{X: 300, Z: 400},
+		wolfADMINTemplate(nil), nil, src, btReg, compReg)
+	if err != nil {
+		t.Fatalf("create wolf: %v", err)
+	}
 
 	bus := event.NewBus()
 	reg := npc.NewRegistry()
@@ -131,21 +141,13 @@ func BenchmarkMovement_500NPCs(b *testing.B) {
 	btReg := bt.DefaultRegistry()
 	compReg := component.DefaultRegistry()
 
-	raw, err := src.LoadNPCTemplate("butterfly_01")
-	if err != nil {
-		b.Fatal(err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		b.Fatal(err)
-	}
-
 	var instances []*npc.Instance
 	for i := 0; i < 500; i++ {
-		inst, err := npc.NewInstanceFromTemplate(
+		inst, err := npctest.NewInstanceWithExtras(
 			fmt.Sprintf("b_%d", i),
 			event.Vec3{X: float64(i * 10), Z: float64(i * 10)},
-			tmpl, compReg, src, btReg,
+			butterflyADMINTemplate(nil),
+			nil, src, btReg, compReg,
 		)
 		if err != nil {
 			b.Fatal(err)

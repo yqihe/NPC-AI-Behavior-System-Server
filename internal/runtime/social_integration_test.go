@@ -1,6 +1,7 @@
 package runtime_test
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -12,21 +13,15 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc/npctest"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/social"
 )
 
 func createGroupNPC(t *testing.T, id string, pos event.Vec3, groupID, role string, src config.Source, btReg *bt.Registry, compReg *component.Registry) *npc.Instance {
 	t.Helper()
-	raw, err := src.LoadNPCTemplate("wolf_common")
-	if err != nil {
-		t.Fatalf("load template: %v", err)
-	}
-	tmpl, err := npc.ParseNPCTemplate(raw)
-	if err != nil {
-		t.Fatalf("parse template: %v", err)
-	}
-	tmpl.Components["social"] = []byte(`{"group_id":"` + groupID + `","role":"` + role + `"}`)
-	inst, err := npc.NewInstanceFromTemplate(id, pos, tmpl, compReg, src, btReg)
+	socialJSON := []byte(`{"group_id":"` + groupID + `","role":"` + role + `"}`)
+	inst, err := npctest.NewInstanceWithExtras(id, pos, wolfADMINTemplate(nil),
+		map[string]json.RawMessage{"social": socialJSON}, src, btReg, compReg)
 	if err != nil {
 		t.Fatalf("create %s: %v", id, err)
 	}

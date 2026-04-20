@@ -2,8 +2,7 @@
 
 **范围**：服务端仓单仓工作。ADMIN 侧已冻结（`external-contract-admin-shape-alignment` 已合并 PR #39）。
 **输入契约锚**：
-- [docs/architecture/api-contract.md](../../architecture/api-contract.md) v1（ADMIN 契约源 `aeee1e1`）
-- [docs/integration/admin-snapshot-2026-04-18.md §4](../../integration/admin-snapshot-2026-04-18.md) — 6 NPC 字段形态基线
+- [docs/architecture/api-contract.md](../../architecture/api-contract.md) v1.1.2（ADMIN 契约源 `e04cf0d`，含 6 NPC 字段形态基线 §4）
 
 ## 动机
 

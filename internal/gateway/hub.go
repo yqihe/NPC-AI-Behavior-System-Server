@@ -3,6 +3,7 @@ package gateway
 import (
 	"context"
 	"log/slog"
+	"runtime/debug"
 	"sync"
 )
 
@@ -18,7 +19,7 @@ type Hub struct {
 	unregister    chan *Conn         // 注销通道
 	broadcast     chan []byte        // 全局广播通道
 	zoneBroadcast chan zonedBroadcast // 区域级广播通道
-	mu            sync.RWMutex      // 保护 count
+	mu            sync.RWMutex       // 保护 count
 	count         int
 }
 
@@ -33,64 +34,87 @@ func NewHub() *Hub {
 	}
 }
 
-// Run 主循环，处理注册/注销/广播。阻塞直到 ctx 取消
+// Run 主循环，处理注册/注销/广播。阻塞直到 ctx 取消。
+// panic 兜底：单次事件 panic 后记录 + 继续循环，不拖垮整个 WS 层。
 func (h *Hub) Run(ctx context.Context) {
 	for {
-		select {
-		case <-ctx.Done():
+		if !h.runOnce(ctx) {
 			return
-		case conn := <-h.register:
-			h.conns[conn] = struct{}{}
+		}
+	}
+}
+
+// runOnce 处理一个事件并 recover。返回 false 表示 ctx 已取消。
+// keepRunning 默认 true：panic 被 defer 吞后函数会提前返回默认值，
+// 这里的默认值必须是 true 才不会导致 Run 误以为要退出。
+func (h *Hub) runOnce(ctx context.Context) (keepRunning bool) {
+	keepRunning = true
+	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("panic.recovered",
+				"where", "hub.run",
+				"err", r,
+				"stack", string(debug.Stack()),
+			)
+			// panic 已吞掉：保持 keepRunning=true，让 Run 继续下一轮
+		}
+	}()
+	select {
+	case <-ctx.Done():
+		keepRunning = false
+		return
+	case conn := <-h.register:
+		h.conns[conn] = struct{}{}
+		h.mu.Lock()
+		h.count = len(h.conns)
+		h.mu.Unlock()
+		slog.Info("hub.register", "clients", h.count)
+	case conn := <-h.unregister:
+		if _, ok := h.conns[conn]; ok {
+			delete(h.conns, conn)
+			close(conn.send)
 			h.mu.Lock()
 			h.count = len(h.conns)
 			h.mu.Unlock()
-			slog.Info("hub.register", "clients", h.count)
-		case conn := <-h.unregister:
-			if _, ok := h.conns[conn]; ok {
+			slog.Info("hub.unregister", "clients", h.count)
+		}
+	case data := <-h.broadcast:
+		for conn := range h.conns {
+			select {
+			case conn.send <- data:
+			default:
 				delete(h.conns, conn)
 				close(conn.send)
 				h.mu.Lock()
 				h.count = len(h.conns)
 				h.mu.Unlock()
-				slog.Info("hub.unregister", "clients", h.count)
+				slog.Warn("hub.slow_client", "clients", h.count)
 			}
-		case data := <-h.broadcast:
-			for conn := range h.conns {
-				select {
-				case conn.send <- data:
-				default:
-					delete(h.conns, conn)
-					close(conn.send)
-					h.mu.Lock()
-					h.count = len(h.conns)
-					h.mu.Unlock()
-					slog.Warn("hub.slow_client", "clients", h.count)
-				}
+		}
+	case zb := <-h.zoneBroadcast:
+		for conn := range h.conns {
+			var data []byte
+			if conn.ZoneID != "" {
+				data = zb.zoneData[conn.ZoneID]
+			} else {
+				data = zb.zoneData[""]
 			}
-		case zb := <-h.zoneBroadcast:
-			for conn := range h.conns {
-				var data []byte
-				if conn.ZoneID != "" {
-					data = zb.zoneData[conn.ZoneID]
-				} else {
-					data = zb.zoneData[""]
-				}
-				if len(data) == 0 {
-					continue
-				}
-				select {
-				case conn.send <- data:
-				default:
-					delete(h.conns, conn)
-					close(conn.send)
-					h.mu.Lock()
-					h.count = len(h.conns)
-					h.mu.Unlock()
-					slog.Warn("hub.slow_client", "clients", h.count)
-				}
+			if len(data) == 0 {
+				continue
+			}
+			select {
+			case conn.send <- data:
+			default:
+				delete(h.conns, conn)
+				close(conn.send)
+				h.mu.Lock()
+				h.count = len(h.conns)
+				h.mu.Unlock()
+				slog.Warn("hub.slow_client", "clients", h.count)
 			}
 		}
 	}
+	return
 }
 
 // Broadcast 向所有连接广播数据（非阻塞，channel 满时丢弃）

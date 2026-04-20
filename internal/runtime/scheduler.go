@@ -340,7 +340,8 @@ func (s *Scheduler) filterPerception(inst *npc.Instance, perc *component.Percept
 	return results
 }
 
-// Run 启动 Tick 循环（阻塞，直到 ctx 取消）
+// Run 启动 Tick 循环（阻塞，直到 ctx 取消）。
+// 每个 Tick 独立 recover：单次 panic 不中断后续调度。
 func (s *Scheduler) Run(ctx context.Context) {
 	ticker := time.NewTicker(s.TickRate)
 	defer ticker.Stop()
@@ -354,7 +355,13 @@ func (s *Scheduler) Run(ctx context.Context) {
 		case now := <-ticker.C:
 			dt := now.Sub(lastTime).Seconds()
 			lastTime = now
-			s.Tick(dt)
+			s.safeTick(dt)
 		}
 	}
+}
+
+// safeTick 单次 Tick 的 panic 兜底包装
+func (s *Scheduler) safeTick(dt float64) {
+	defer Recover("scheduler.tick")
+	s.Tick(dt)
 }

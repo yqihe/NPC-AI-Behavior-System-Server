@@ -3,6 +3,7 @@ package gateway
 import (
 	"encoding/json"
 	"log/slog"
+	"runtime/debug"
 	"time"
 
 	"github.com/gorilla/websocket"
@@ -35,9 +36,17 @@ func NewConn(hub *Hub, ws *websocket.Conn, router *Router) *Conn {
 	}
 }
 
-// ReadPump 读循环：解码 → 路由 → 响应写入 send。阻塞直到连接关闭
+// ReadPump 读循环：解码 → 路由 → 响应写入 send。阻塞直到连接关闭。
+// panic 兜底：router/handler panic 不拖垮其他连接，本连接清理退出。
 func (c *Conn) ReadPump() {
 	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("panic.recovered",
+				"where", "conn.read_pump",
+				"err", r,
+				"stack", string(debug.Stack()),
+			)
+		}
 		c.hub.unregister <- c
 		c.ws.Close()
 	}()
@@ -71,10 +80,18 @@ func (c *Conn) ReadPump() {
 	}
 }
 
-// WritePump 写循环：从 send channel 取数据发送。阻塞直到 send 关闭
+// WritePump 写循环：从 send channel 取数据发送。阻塞直到 send 关闭。
+// panic 兜底：确保 ws 关闭 + 不影响其他连接。
 func (c *Conn) WritePump() {
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		if r := recover(); r != nil {
+			slog.Error("panic.recovered",
+				"where", "conn.write_pump",
+				"err", r,
+				"stack", string(debug.Stack()),
+			)
+		}
 		ticker.Stop()
 		c.ws.Close()
 	}()

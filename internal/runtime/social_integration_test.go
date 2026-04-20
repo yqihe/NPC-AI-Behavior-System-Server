@@ -31,10 +31,7 @@ func createGroupNPC(t *testing.T, id string, pos event.Vec3, groupID, role strin
 // --- 群组感知共享 ---
 
 func TestSocialIntegration_GroupPerceptionSharing(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 两只狼同组：wolf_a 在爆炸附近，wolf_b 在远处
 	wolfA := createGroupNPC(t, "wolf_a", event.Vec3{X: 100, Y: 0, Z: 100}, "pack1", "leader", src, btReg, compReg)
@@ -100,10 +97,7 @@ func TestSocialIntegration_LeaderLost(t *testing.T) {
 // --- 群体逃跑（group_alert）---
 
 func TestSocialIntegration_GroupAlert(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	wolfA := createGroupNPC(t, "wolf_a", event.Vec3{X: 100, Y: 0, Z: 100}, "pack1", "leader", src, btReg, compReg)
 	wolfB := createGroupNPC(t, "wolf_b", event.Vec3{X: 110, Y: 0, Z: 100}, "pack1", "follower", src, btReg, compReg)

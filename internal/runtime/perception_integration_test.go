@@ -5,9 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
@@ -19,10 +17,7 @@ import (
 // --- 注意力容量裁剪 ---
 
 func TestPerceptionIntegration_AttentionCapacity(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 创建 reactive NPC，attention_capacity=3（通过 extras.perception 覆盖默认 5）
 	extras := map[string]json.RawMessage{
@@ -76,10 +71,7 @@ func TestPerceptionIntegration_AttentionCapacity(t *testing.T) {
 // --- 区域隔离 ---
 
 func TestPerceptionIntegration_ZoneIsolation(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 创建 NPC 在 meadow 区域
 	inst, err := npctest.NewInstanceWithExtras("wolf_zone", event.Vec3{X: 300, Z: 400},
@@ -129,10 +121,7 @@ func TestPerceptionIntegration_ZoneIsolation(t *testing.T) {
 // --- 强度传递到决策中心 ---
 
 func TestPerceptionIntegration_StrengthPassthrough(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	inst, err := npctest.NewInstanceWithExtras("wolf_str", event.Vec3{X: 100, Z: 100},
 		wolfADMINTemplate(nil), nil, src, btReg, compReg)

@@ -5,11 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime"
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
@@ -19,10 +16,7 @@ import (
 // --- 需求优先：NPC 饥饿且无威胁 ---
 
 func TestDecisionIntegration_NeedsPriority_NoThreat(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 创建一个有 needs + personality 的 NPC（wolf ADMIN 模板 + extras 注入）
 	extras := map[string]json.RawMessage{
@@ -62,10 +56,7 @@ func TestDecisionIntegration_NeedsPriority_NoThreat(t *testing.T) {
 // --- 情绪优先：timid NPC 高恐惧 ---
 
 func TestDecisionIntegration_EmotionPriority_Timid(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	extras := map[string]json.RawMessage{
 		"personality": []byte(`{"personality_type":"timid","decision_weights":{"threat":0.2,"needs":0.2,"emotion":0.6},"flee_threshold":30}`),
@@ -107,10 +98,7 @@ func TestDecisionIntegration_EmotionPriority_Timid(t *testing.T) {
 // --- 高威胁压制 ---
 
 func TestDecisionIntegration_ThreatOverride(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	extras := map[string]json.RawMessage{
 		"personality": []byte(`{"personality_type":"docile","decision_weights":{"threat":0.4,"needs":0.3,"emotion":0.3}}`),
@@ -149,10 +137,7 @@ func TestDecisionIntegration_ThreatOverride(t *testing.T) {
 // --- 默认权重（无 personality）始终 threat ---
 
 func TestDecisionIntegration_DefaultWeights(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 无 personality 组件（ADMIN shape + 不 opt-in、不 extras 注入）→ 走默认权重
 	// 通过 fields 去掉 aggression 避免触发任何 personality 推断

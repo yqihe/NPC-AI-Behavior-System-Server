@@ -4,9 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
@@ -21,10 +19,7 @@ import (
 // "simple" 语义从"组件缺失"演变为"组件被动化"——本测试以 perception_range=0
 // 的 butterfly 展示 passive NPC 不累积威胁、movement 正常 tick 的不变量。
 func TestComponentIntegration_SimpleNPC_NoAIPipeline(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// passive butterfly：感知范围 0 → 任何事件都不入感知
 	inst, err := npctest.NewInstanceWithExtras("butterfly_1", event.Vec3{X: 100, Z: 200},
@@ -72,10 +67,7 @@ func TestComponentIntegration_SimpleNPC_NoAIPipeline(t *testing.T) {
 // --- 场景：reactive NPC 完整 AI 管线 ---
 
 func TestComponentIntegration_ReactiveNPC_FullPipeline(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 创建 reactive NPC（灰狼，ADMIN shape 经 npctest 翻译）
 	inst, err := npctest.NewInstanceWithExtras("wolf_1", event.Vec3{X: 300, Z: 400},
@@ -144,10 +136,7 @@ func TestComponentIntegration_ReactiveNPC_FullPipeline(t *testing.T) {
 // --- 场景：混合 Tick（simple + reactive 共存）---
 
 func TestComponentIntegration_MixedTick(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	butterfly, err := npctest.NewInstanceWithExtras("b1", event.Vec3{X: 100, Z: 200},
 		butterflyADMINTemplate(nil), nil, src, btReg, compReg)

@@ -9,11 +9,20 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
+	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/event"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/npc"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/perception"
 )
+
+// newTestEnv 返回 integration 测试公用的四件套：JSONSource / bt.Registry /
+// component.Registry / evtTypes。configsDir 锚在仓库根 configs/。
+func newTestEnv(t *testing.T) (config.Source, *bt.Registry, *component.Registry, map[string]*event.EventTypeConfig) {
+	t.Helper()
+	src := config.NewJSONSource(configsDir(t))
+	return src, bt.DefaultRegistry(), component.DefaultRegistry(), loadEvtTypes(t, src)
+}
 
 // eventsToPerceived 将事件列表转换为 PerceiveResult（用 CalcThreat 计算强度）
 func eventsToPerceived(npcPos event.Vec3, events []*event.Event, evtTypes map[string]*event.EventTypeConfig) []perception.PerceiveResult {

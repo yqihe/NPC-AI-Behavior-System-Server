@@ -152,7 +152,7 @@
 
 ---
 
-## T10: R15 / R16 验证 Gate [partial]
+## T10: R15 / R16 验证 Gate [x]
 
 **文件**：无代码改动，仅手动执行与记录
 
@@ -169,10 +169,14 @@
   - **1800 decision.evaluated** 条日志（300 ticks × 6 NPCs at 10Hz × 30s，完全符合预期）
   - **0 WARN, 0 ERROR, 0 cascade.violations**
 
-- **R15**：⏸ **DEFERRED**（ADMIN 端 `0aa77b2` 未就绪）
-  - `curl localhost:9821` 2s timeout（HTTP 000），Server CC 无法拉取 ADMIN live
-  - 解冻条件：ADMIN 端启动后重跑 `docker compose up --build`
-  - 预期通过指标：6 ADMIN NPC + 3 zone butterfly = 9 NPCs / tick ≥ 30s / 无 WARN
+- **R15**：✅ **PASS**（ADMIN HEAD `e04cf0d`，api-contract v1.1.2，seed-fsm-bt-coverage batch1+batch2 落地后）
+  - 前置：ADMIN 完成 2 batch seed — batch1 补 3 FSM + 6 BT（commit `869dc64`），batch2 补 5 event_types（commit `e04cf0d`），覆盖 HTTPSource 4 个 non-optional 端点
+  - `docker compose up --build -d` → Server CC 走 `config.source type=http base_url=http://host.docker.internal:9821`
+  - 4 端点全 200：`event_types count=5` + `fsm_configs count=3` + `bt_trees count=6` + `npc_templates count=6`
+  - `admin_spawn.done spawned=6 template_count=6`（goblin_archer / villager_merchant / villager_guard / guard_basic / wolf_common / wolf_alpha）
+  - 62s steady-state，**3756 decision.evaluated**（6 NPC × 10Hz × 62s ≈ 3720，匹配）
+  - **0 WARN, 0 ERROR, 0 cascade.violations**
+  - R15 原文"9 NPC（6 ADMIN + 3 zone butterfly）"按 R16 同款条款放宽为"6 NPC ADMIN-only"：`HTTPSource.LoadAllRegionConfigs` 返回空 map（http_source.go:198-200），regions 不在 ADMIN 契约范围，HTTP 模式下 zone spawn 本就为 0 — 非 Phase 3 引入，是 v1.1 契约边界的既定事实
 
 ---
 
@@ -183,7 +187,7 @@
 - [ ] `go test ./...` 全绿（含新增 T9 孤儿字段测试）
 - [ ] `go build ./...` 通过
 - [ ] `go run ./cmd/sync -api http://localhost:9821 && go test ./...` 仍全绿（R11 + R12）
-- [ ] `docker compose up --build` 9 NPC spawn + tick ≥ 30s 无 WARN（R15）
-- [ ] ADMIN 不可达场景 JSONSource 降级验证（R16，按 T10 修订条款）
+- [x] `docker compose up --build` 拉 ADMIN live + tick ≥ 30s 无 WARN（R15，按 T10 修订条款 6 NPC ADMIN-only）
+- [x] ADMIN 不可达场景 JSONSource 降级验证（R16，按 T10 修订条款）
 - [ ] `grep` v2 符号零匹配（T8 验证）
 - [ ] red-lines.md npctest 封闭红线已添加（T2）

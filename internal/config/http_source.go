@@ -33,6 +33,7 @@ type HTTPSource struct {
 	fsmConfigs   map[string][]byte // name → raw JSON
 	btTrees      map[string][]byte // name → raw JSON
 	eventTypes   map[string][]byte // name → raw JSON
+	regions      map[string][]byte // region_id → raw JSON（config body，含 region_id 冗余字段）
 }
 
 // NewHTTPSource 从 ADMIN 平台全量拉取配置到内存
@@ -43,6 +44,7 @@ func NewHTTPSource(ctx context.Context, baseURL string) (*HTTPSource, error) {
 		fsmConfigs:   make(map[string][]byte),
 		btTrees:      make(map[string][]byte),
 		eventTypes:   make(map[string][]byte),
+		regions:      make(map[string][]byte),
 	}
 
 	endpoints := []struct {
@@ -70,7 +72,87 @@ func NewHTTPSource(ctx context.Context, baseURL string) (*HTTPSource, error) {
 		slog.Info("config.http.loaded", "endpoint", ep.path, "count", len(ep.target))
 	}
 
+	// regions 端点单独处理：空 items[] 合法（与 JSONSource 目录不存在行为一致），
+	// 且 500+业务码 47011 需提取 details[] 悬空引用 fail-fast（见 memory: Admin regions 端点契约）
+	regionsPath := "/api/configs/regions"
+	if err := fetchRegionsEndpoint(ctx, client, baseURL+regionsPath, s.regions); err != nil {
+		return nil, err
+	}
+	slog.Info("config.http.loaded", "endpoint", regionsPath, "count", len(s.regions))
+
 	return s, nil
+}
+
+// regionsErrorBody regions 端点业务错误响应（500 + code 47011）
+type regionsErrorBody struct {
+	Code    int               `json:"code"`
+	Message string            `json:"message"`
+	Details []regionsDangling `json:"details"`
+}
+
+// regionsDangling regions 端点 details[] 条目。
+// ADMIN 侧复用 NpcExportDanglingRef 类型未新建独立类型，字段名保留 npc_name —
+// 但 regions 端点语境下它实际承载 region_id。打日志时重命名以免运维看岔。
+type regionsDangling struct {
+	RegionID string `json:"npc_name"`
+	RefType  string `json:"ref_type"`
+	RefValue string `json:"ref_value"`
+	Reason   string `json:"reason"`
+}
+
+// fetchRegionsEndpoint regions 专用拉取：空 items[] 合法；500+47011 解码悬空 details[] 后 fail-fast。
+func fetchRegionsEndpoint(ctx context.Context, client *http.Client, url string, target map[string][]byte) error {
+	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("config: http create request %s: %w", url, err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("config: http request %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("config: http read %s: %w", url, err)
+	}
+
+	if resp.StatusCode == http.StatusInternalServerError {
+		var errBody regionsErrorBody
+		if jerr := json.Unmarshal(body, &errBody); jerr == nil && errBody.Code == 47011 {
+			for _, d := range errBody.Details {
+				slog.Error("config.http.regions.dangling",
+					"region_id", d.RegionID,
+					"ref_type", d.RefType,
+					"ref_value", d.RefValue,
+					"reason", d.Reason,
+				)
+			}
+			return fmt.Errorf("config: regions export dangling refs (code=47011, count=%d): %s",
+				len(errBody.Details), errBody.Message)
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("config: http request %s: status %d body=%s", url, resp.StatusCode, string(body))
+	}
+
+	var response httpConfigResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return fmt.Errorf("config: http parse %s: %w", url, err)
+	}
+
+	for _, item := range response.Items {
+		if item.Name == "" {
+			continue
+		}
+		target[item.Name] = item.Config
+	}
+	return nil
 }
 
 // fetchEndpoint 从一个 API endpoint 拉取配置到 map
@@ -192,9 +274,20 @@ func (s *HTTPSource) LoadAllNPCTemplates() (map[string][]byte, error) {
 }
 
 func (s *HTTPSource) LoadRegionConfig(regionID string) ([]byte, error) {
-	return nil, fmt.Errorf("config: region loading via HTTP not yet implemented")
+	data, ok := s.regions[regionID]
+	if !ok {
+		return nil, fmt.Errorf("config: region %q not found", regionID)
+	}
+	if !json.Valid(data) {
+		return nil, fmt.Errorf("config: region %q is not valid JSON", regionID)
+	}
+	return data, nil
 }
 
 func (s *HTTPSource) LoadAllRegionConfigs() (map[string][]byte, error) {
-	return make(map[string][]byte), nil
+	result := make(map[string][]byte, len(s.regions))
+	for name, data := range s.regions {
+		result[name] = data
+	}
+	return result, nil
 }

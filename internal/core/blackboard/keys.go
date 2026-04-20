@@ -48,7 +48,7 @@ var KeyMemoryThreatValue = NewKey[float64]("memory_threat_value") // 最高威�
 // --- 社交系统 ---
 
 var KeyGroupID       = NewKey[string]("group_id")        // 群组 ID
-var KeySocialRole    = NewKey[string]("social_role")     // 社交角色（leader/follower）
+var KeySocialRole    = NewKey[string]("social_role")     // 社交角色（leader/follower 触发队形逻辑，其他自由值无队形行为）
 var KeyLeaderLost    = NewKey[bool]("leader_lost")       // leader 被移除
 var KeyGroupAlert    = NewKey[bool]("group_alert")       // 同组有成员 Flee
 var KeyFollowTargetX = NewKey[float64]("follow_target_x") // leader X 坐标（follower 用）

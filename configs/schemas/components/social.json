@@ -19,8 +19,7 @@
       "role": {
         "type": "string",
         "title": "社交角色",
-        "description": "leader=领导者(被跟随), follower=跟随者(跟随 leader 移动)",
-        "enum": ["leader", "follower"]
+        "description": "leader=领导者(被跟随), follower=跟随者(跟随 leader 移动), 其他自由值表示在 group 中但无队形行为(如 trader/guard 等策划自定义)"
       },
       "follow_target": {
         "type": "string",

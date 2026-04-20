@@ -26,7 +26,7 @@
 
 ## 三、性能与压测（Performance）
 
-压测脚本位于 [test/benchmark/](../../test/benchmark/)，以 k6 + WebSocket 为基准。
+压测脚本位于 [test/benchmark/](../../test/benchmark/)，以 k6 + WebSocket 为基准。已落盘基线：[本地+debug](../../test/benchmark/baseline_2026-04-20.md) → [Docker+info+内存](../../test/benchmark/baseline_2026-04-20_docker_info.md) → [脚本修复后](../../test/benchmark/baseline_2026-04-20_script_fix.md)（当前生效）。
 
 | # | 项目 | 目标值（毕设基线） | 采集方式 |
 |---|------|------------------|---------|

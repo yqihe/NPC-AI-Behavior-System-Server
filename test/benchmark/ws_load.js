@@ -42,16 +42,17 @@ function genId(prefix) {
 export default function () {
     const res = ws.connect(WS_URL, {}, function (socket) {
         const pendingSpawns = new Map();
+        const confirmedNpcIds = new Set();
         const pendingEvents = [];
         let lastSnapshotAt = 0;
-        const spawnedNpcIds = [];
 
+        const runId = Math.random().toString(36).slice(2, 8);
         socket.on('open', () => {
             for (let i = 0; i < NPC_COUNT; i++) {
                 const reqId = genId('spawn');
-                const npcId = `npc_${i}`;
+                const npcId = `npc_${runId}_${i}`;
                 const typeName = i % 2 === 0 ? 'civilian' : 'police';
-                pendingSpawns.set(reqId, nowMs());
+                pendingSpawns.set(reqId, { at: nowMs(), npcId });
                 socket.send(JSON.stringify({
                     type: 'spawn_npc',
                     id: reqId,
@@ -62,7 +63,6 @@ export default function () {
                         z: Math.random() * 1000,
                     },
                 }));
-                spawnedNpcIds.push(npcId);
             }
         });
 
@@ -76,7 +76,9 @@ export default function () {
             }
 
             if (msg.type === 'response' && pendingSpawns.has(msg.id)) {
-                spawnLatency.add(nowMs() - pendingSpawns.get(msg.id));
+                const p = pendingSpawns.get(msg.id);
+                spawnLatency.add(nowMs() - p.at);
+                confirmedNpcIds.add(p.npcId);
                 pendingSpawns.delete(msg.id);
                 return;
             }
@@ -126,7 +128,10 @@ export default function () {
         }, eventIntervalMs);
 
         socket.setTimeout(() => {
-            for (const npcId of spawnedNpcIds) {
+            if (pendingSpawns.size > 0) {
+                console.warn(`cleanup: ${pendingSpawns.size} spawn(s) still pending, skipping their removes (likely DURATION too short for NPC_COUNT=${NPC_COUNT})`);
+            }
+            for (const npcId of confirmedNpcIds) {
                 socket.send(JSON.stringify({
                     type: 'remove_npc',
                     id: genId('rm'),

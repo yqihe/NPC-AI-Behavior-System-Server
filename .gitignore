@@ -55,3 +55,6 @@ logs/
 
 # MongoDB/Redis local data
 data/
+
+# Benchmark transient samples
+test/benchmark/.tmp/

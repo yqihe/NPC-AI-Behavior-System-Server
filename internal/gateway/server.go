@@ -5,9 +5,13 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/gorilla/websocket"
 )
+
+// ShutdownTimeout 优雅关闭最长等待时间：排空 in-flight HTTP 请求
+const ShutdownTimeout = 5 * time.Second
 
 var upgrader = websocket.Upgrader{
 	CheckOrigin: func(r *http.Request) bool { return true }, // 开发阶段允许所有来源
@@ -49,11 +53,16 @@ func (s *Server) Start(ctx context.Context) error {
 
 	slog.Info("server.start", "addr", s.addr)
 
-	// 监听 ctx 取消，优雅关闭
+	// 监听 ctx 取消，优雅关闭：排空 in-flight 请求，超时兜底
 	go func() {
 		<-ctx.Done()
-		slog.Info("server.shutdown")
-		s.httpSrv.Close()
+		slog.Info("server.shutdown", "timeout", ShutdownTimeout.String())
+		shutdownCtx, cancel := context.WithTimeout(context.Background(), ShutdownTimeout)
+		defer cancel()
+		if err := s.httpSrv.Shutdown(shutdownCtx); err != nil {
+			slog.Warn("server.shutdown_error", "err", err)
+			s.httpSrv.Close()
+		}
 	}()
 
 	err := s.httpSrv.ListenAndServe()

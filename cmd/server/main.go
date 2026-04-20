@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
@@ -24,6 +26,9 @@ import (
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/zone"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/pkg/protocol"
 )
+
+// shutdownGoroutineTimeout 等待后台 goroutine（scheduler/hub/broadcast）退出的最长时间
+const shutdownGoroutineTimeout = 5 * time.Second
 
 // serverConfig 服务端启动配置
 type serverConfig struct {
@@ -134,17 +139,46 @@ func main() {
 		w.Write([]byte(m.PrometheusText()))
 	}
 
-	// 6. 启动
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
+	// 6. 启动：监听 SIGINT + SIGTERM（docker stop 默认发 SIGTERM）
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
-	go sched.Run(ctx)
-	go hub.Run(ctx)
-	go broadcastLoop(ctx, hub, reg, tickRate)
+	var wg sync.WaitGroup
+	wg.Add(3)
+	go func() { defer wg.Done(); sched.Run(ctx) }()
+	go func() { defer wg.Done(); hub.Run(ctx) }()
+	go func() { defer wg.Done(); broadcastLoop(ctx, hub, reg, tickRate) }()
 
-	if err := srv.Start(ctx); err != nil {
-		slog.Error("server.fatal", "err", err)
+	srvErr := srv.Start(ctx)
+	if srvErr != nil {
+		slog.Error("server.fatal", "err", srvErr)
+	}
+
+	// ctx 已取消（signal 或 server 失败）；等后台 goroutine 排空
+	cancel()
+	if err := waitWithTimeout(&wg, shutdownGoroutineTimeout); err != nil {
+		slog.Warn("shutdown.timeout", "err", err)
+	} else {
+		slog.Info("shutdown.clean")
+	}
+
+	if srvErr != nil {
 		os.Exit(1)
+	}
+}
+
+// waitWithTimeout 等 WaitGroup 归零或超时。
+func waitWithTimeout(wg *sync.WaitGroup, timeout time.Duration) error {
+	done := make(chan struct{})
+	go func() {
+		wg.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-time.After(timeout):
+		return fmt.Errorf("background goroutines did not exit within %s", timeout)
 	}
 }
 
@@ -275,7 +309,8 @@ func loadAllEventTypes(src config.Source) map[string]*event.EventTypeConfig {
 	return evtTypes
 }
 
-// broadcastLoop 按 tickRate 频率广播 WorldSnapshot
+// broadcastLoop 按 tickRate 频率广播 WorldSnapshot。
+// 每 tick 独立 recover：单次 snapshot 构造/序列化 panic 不中断后续广播。
 func broadcastLoop(ctx context.Context, hub *gateway.Hub, reg *npc.Registry, tickRate time.Duration) {
 	ticker := time.NewTicker(tickRate)
 	defer ticker.Stop()
@@ -288,30 +323,37 @@ func broadcastLoop(ctx context.Context, hub *gateway.Hub, reg *npc.Registry, tic
 			return
 		case <-ticker.C:
 			tickCount++
-			if hub.Count() == 0 {
-				continue
-			}
-
-			snapshot := buildSnapshot(tickCount, reg)
-			snapshotJSON, err := json.Marshal(snapshot)
-			if err != nil {
-				slog.Warn("broadcast.marshal_error", "err", err)
-				continue
-			}
-
-			msg, err := json.Marshal(protocol.Message{
-				Type: protocol.TypeWorldSnapshot,
-				Data: json.RawMessage(snapshotJSON),
-			})
-			if err != nil {
-				slog.Warn("broadcast.marshal_error", "err", err)
-				continue
-			}
-
-			hub.Broadcast(msg)
-			slog.Debug("broadcast.snapshot", "tick", tickCount, "npc_count", len(snapshot.NPCs))
+			broadcastOnce(hub, reg, tickCount)
 		}
 	}
+}
+
+// broadcastOnce 单次广播 + panic 兜底
+func broadcastOnce(hub *gateway.Hub, reg *npc.Registry, tickCount uint64) {
+	defer runtime.Recover("broadcast.loop")
+
+	if hub.Count() == 0 {
+		return
+	}
+
+	snapshot := buildSnapshot(tickCount, reg)
+	snapshotJSON, err := json.Marshal(snapshot)
+	if err != nil {
+		slog.Warn("broadcast.marshal_error", "err", err)
+		return
+	}
+
+	msg, err := json.Marshal(protocol.Message{
+		Type: protocol.TypeWorldSnapshot,
+		Data: json.RawMessage(snapshotJSON),
+	})
+	if err != nil {
+		slog.Warn("broadcast.marshal_error", "err", err)
+		return
+	}
+
+	hub.Broadcast(msg)
+	slog.Debug("broadcast.snapshot", "tick", tickCount, "npc_count", len(snapshot.NPCs))
 }
 
 // buildSnapshot 构建当前世界状态快照

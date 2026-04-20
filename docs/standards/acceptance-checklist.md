@@ -21,7 +21,7 @@
 |---|------|------|
 | O1 | 所有关键事件走 `log/slog` 结构化输出，格式 `组件.动作` + kv | `development/dev-rules.md` |
 | O2 | Tick 延迟、NPC 数、事件总线积压等关键指标可采集（至少日志中可检索） | 压测日志 |
-| O3 | Panic 被顶层 recover 兜底并落日志，不终止整个进程 | 人工注入 panic 验证 |
+| O3 | Panic 被顶层 recover 兜底并落日志，不终止整个进程 | 单元测试 [safego_test.go](../../internal/runtime/safego_test.go) + [panic_recover_test.go](../../internal/gateway/panic_recover_test.go)；热路径（scheduler.tick / hub.run / conn.read_pump / conn.write_pump / broadcast.loop）均 `defer Recover` |
 | O4 | 配置源切换（JSON/Mongo/Admin）有 INFO 级日志标注实际生效源 | 启动日志 |
 
 ## 三、性能与压测（Performance）
@@ -46,7 +46,7 @@
 | R2 | 未知 `type` 返回 `unknown_message_type`，不关闭连接 | e2e |
 | R3 | 配置字段缺失或引用错误**启动失败**（不延迟到运行时），见红线 | 人工造错 |
 | R4 | 客户端异常断连不影响其他客户端的广播 | 多连接 e2e |
-| R5 | `SIGTERM` 后优雅关闭：停止接收新消息、排空广播、关闭 MongoDB | `docker compose down` 观察 |
+| R5 | `SIGTERM` 后优雅关闭：停止接收新连接、排空 in-flight HTTP、等待后台 goroutine 退出 | 单元测试 [shutdown_test.go](../../internal/gateway/shutdown_test.go)；`main.go` 监听 SIGINT+SIGTERM，`httpSrv.Shutdown(ctx, 5s)` + `WaitGroup` 等 scheduler/hub/broadcastLoop 排空。**注**：MongoDB 由 `NewMongoSource` 加载完即 `Disconnect`，runtime 期间无连接可关 |
 
 ## 五、配置与数据源（Configuration）
 

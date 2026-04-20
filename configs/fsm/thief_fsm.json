@@ -1,0 +1,51 @@
+{
+  "states": [
+    {
+      "name": "steal"
+    },
+    {
+      "name": "flee"
+    }
+  ],
+  "transitions": [
+    {
+      "to": "flee",
+      "from": "steal",
+      "priority": 10,
+      "condition": {
+        "and": [
+          {
+            "op": "\u003e",
+            "key": "threat_level",
+            "value": 50
+          },
+          {
+            "op": "\u003e",
+            "key": "threat_expire_at",
+            "ref_key": "current_time"
+          }
+        ]
+      }
+    },
+    {
+      "to": "steal",
+      "from": "flee",
+      "priority": 10,
+      "condition": {
+        "or": [
+          {
+            "op": "\u003c",
+            "key": "threat_level",
+            "value": 20
+          },
+          {
+            "op": "\u003c=",
+            "key": "threat_expire_at",
+            "ref_key": "current_time"
+          }
+        ]
+      }
+    }
+  ],
+  "initial_state": "steal"
+}

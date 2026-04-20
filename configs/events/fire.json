@@ -1,7 +1,8 @@
 {
-  "name": "fire",
   "default_severity": 60,
   "default_ttl": 20,
+  "display_name": "起火",
+  "name": "fire",
   "perception_mode": "visual",
   "range": 150
 }

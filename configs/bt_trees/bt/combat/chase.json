@@ -1,0 +1,19 @@
+{
+  "type": "sequence",
+  "children": [
+    {
+      "type": "set_bb_value",
+      "params": {
+        "key": "current_action",
+        "value": "detect_target"
+      }
+    },
+    {
+      "type": "stub_action",
+      "params": {
+        "name": "approach_target",
+        "result": "success"
+      }
+    }
+  ]
+}

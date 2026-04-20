@@ -1,0 +1,111 @@
+{
+  "states": [
+    {
+      "name": "Idle"
+    },
+    {
+      "name": "Patrol"
+    },
+    {
+      "name": "Chase"
+    },
+    {
+      "name": "Attack"
+    }
+  ],
+  "transitions": [
+    {
+      "to": "Patrol",
+      "from": "Idle",
+      "priority": 1,
+      "condition": {}
+    },
+    {
+      "to": "Chase",
+      "from": "Patrol",
+      "priority": 10,
+      "condition": {
+        "and": [
+          {
+            "op": "\u003e=",
+            "key": "threat_level",
+            "value": 30
+          },
+          {
+            "op": "\u003e",
+            "key": "threat_expire_at",
+            "ref_key": "current_time"
+          }
+        ]
+      }
+    },
+    {
+      "to": "Attack",
+      "from": "Chase",
+      "priority": 10,
+      "condition": {
+        "and": [
+          {
+            "op": "\u003e=",
+            "key": "threat_level",
+            "value": 60
+          },
+          {
+            "op": "\u003e",
+            "key": "threat_expire_at",
+            "ref_key": "current_time"
+          }
+        ]
+      }
+    },
+    {
+      "to": "Chase",
+      "from": "Attack",
+      "priority": 5,
+      "condition": {
+        "op": "\u003c",
+        "key": "threat_level",
+        "value": 40
+      }
+    },
+    {
+      "to": "Patrol",
+      "from": "Chase",
+      "priority": 5,
+      "condition": {
+        "or": [
+          {
+            "op": "\u003c",
+            "key": "threat_level",
+            "value": 10
+          },
+          {
+            "op": "\u003c=",
+            "key": "threat_expire_at",
+            "ref_key": "current_time"
+          }
+        ]
+      }
+    },
+    {
+      "to": "Patrol",
+      "from": "Attack",
+      "priority": 3,
+      "condition": {
+        "or": [
+          {
+            "op": "\u003c",
+            "key": "threat_level",
+            "value": 10
+          },
+          {
+            "op": "\u003c=",
+            "key": "threat_expire_at",
+            "ref_key": "current_time"
+          }
+        ]
+      }
+    }
+  ],
+  "initial_state": "Idle"
+}

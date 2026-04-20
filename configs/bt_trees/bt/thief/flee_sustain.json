@@ -1,0 +1,7 @@
+{
+  "type": "stub_action",
+  "params": {
+    "name": "flee_sustain",
+    "result": "running"
+  }
+}

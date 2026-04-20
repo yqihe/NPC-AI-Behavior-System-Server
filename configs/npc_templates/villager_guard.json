@@ -1,0 +1,25 @@
+{
+  "template_ref": "warrior_base",
+  "fields": {
+    "aggression": "neutral",
+    "attack_power": 15.0,
+    "defense": 20.0,
+    "enable_emotion": false,
+    "enable_memory": false,
+    "enable_personality": true,
+    "is_boss": false,
+    "loot_table": "",
+    "max_hp": 200,
+    "move_speed": 3.0,
+    "perception_range": 25.0
+  },
+  "behavior": {
+    "fsm_ref": "fsm_combat_basic",
+    "bt_refs": {
+      "attack": "bt/combat/attack",
+      "chase": "bt/combat/chase",
+      "idle": "bt/combat/idle",
+      "patrol": "bt/combat/patrol"
+    }
+  }
+}

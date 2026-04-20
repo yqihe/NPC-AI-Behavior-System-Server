@@ -1,0 +1,12 @@
+{
+  "template_ref": "tpl_guard",
+  "fields": {
+    "hp": 100
+  },
+  "behavior": {
+    "fsm_ref": "guard",
+    "bt_refs": {
+      "patrol": "bt/guard/patrol"
+    }
+  }
+}

@@ -1,7 +1,8 @@
 {
-  "name": "shout",
   "default_severity": 30,
   "default_ttl": 8,
+  "display_name": "呼喊",
+  "name": "shout",
   "perception_mode": "auditory",
   "range": 200
 }

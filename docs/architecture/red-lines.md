@@ -53,3 +53,4 @@
 
 - **禁止** ADMIN 侧只修改本地 `configs/` 文件就回复 READY。配置变更必须通过 REST API 写入 MongoDB
 - **禁止**服务端跳过 `cmd/sync` 直接验证。e2e 测试用 JSONSource，不同步就拿不到 ADMIN 新增的配置
+- **禁止**把本地测试 fixture 当 ADMIN 残留清理。`civilian` / `police` / `butterfly_01` 是 Server 专属本地 fixture，承重 `test/e2e/gateway_test.go`、`test/e2e/extension_test.go`、`internal/experiment/` 对照实验、`configs/regions/meadow.json` 与 zone 集成测试，ADMIN 契约不含它们；`cmd/sync` 也不得加无条件 `--prune`

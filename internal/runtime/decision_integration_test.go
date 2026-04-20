@@ -80,7 +80,7 @@ func TestDecisionIntegration_EmotionPriority_Timid(t *testing.T) {
 	bus := event.NewBus()
 	// 小威胁事件（远距离）
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{400, 0, 100}, "bomb", 30, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 400, Y: 0, Z: 100}, "bomb", 30, "")
 	bus.Publish(evt)
 
 	reg := npc.NewRegistry()
@@ -126,7 +126,7 @@ func TestDecisionIntegration_ThreatOverride(t *testing.T) {
 	bus := event.NewBus()
 	// 近距离高威胁事件
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{110, 0, 100}, "bomb", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 110, Y: 0, Z: 100}, "bomb", 80, "")
 	bus.Publish(evt)
 
 	reg := npc.NewRegistry()
@@ -171,7 +171,7 @@ func TestDecisionIntegration_DefaultWeights(t *testing.T) {
 	bus := event.NewBus()
 	// 微弱威胁
 	shoutCfg := evtTypes["shout"]
-	evt := event.NewEvent(shoutCfg, event.Vec3{110, 0, 100}, "npc2", 10, "")
+	evt := event.NewEvent(shoutCfg, event.Vec3{X: 110, Y: 0, Z: 100}, "npc2", 10, "")
 	bus.Publish(evt)
 
 	reg := npc.NewRegistry()

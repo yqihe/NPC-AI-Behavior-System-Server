@@ -24,15 +24,6 @@ const (
 	defaultWanderRadius  = 20.0
 )
 
-// optInBoolFields 5 个 R17 opt-in bool 字段名（absent ≡ false）
-var optInBoolFields = [...]string{
-	"enable_memory",
-	"enable_emotion",
-	"enable_needs",
-	"enable_personality",
-	"enable_social",
-}
-
 // ADMINTemplate ADMIN v3 导出的 NPC 模板形状 `{template_ref, fields, behavior}`
 // 扁平字段 + 行为引用，T1 翻译层转换为 5 默认组件 + opt-in 组件（R17）
 type ADMINTemplate struct {

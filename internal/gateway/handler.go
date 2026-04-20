@@ -132,9 +132,7 @@ func makeRemoveNPCHandler(registry *npc.Registry, gm *social.GroupManager) Handl
 		registry.Remove(req.NpcID)
 		slog.Debug("handler.remove_npc", "npc_id", req.NpcID)
 
-		resp, _ := protocol.NewResponse(msg.ID, protocol.RemoveNPCResponse{
-			NpcID: req.NpcID,
-		})
+		resp, _ := protocol.NewResponse(msg.ID, protocol.RemoveNPCResponse(req))
 		conn.sendMsg(resp)
 		return nil
 	}

@@ -83,7 +83,7 @@ func TestIntegration_Scenario1_CivilianFleeFromExplosion(t *testing.T) {
 	center := decision.NewCenter(10.0)
 
 	// 创建平民 NPC
-	inst := createCivilian(t, "npc_1", event.Vec3{0, 0, 0}, src, btReg)
+	inst := createCivilian(t, "npc_1", event.Vec3{X: 0, Y: 0, Z: 0}, src, btReg)
 	blackboard.Set(inst.BB, blackboard.KeyCurrentTime, int64(10000))
 
 	// 初始状态应该是 Idle
@@ -93,7 +93,7 @@ func TestIntegration_Scenario1_CivilianFleeFromExplosion(t *testing.T) {
 
 	// 发布爆炸事件（距离 100，range 500）
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{100, 0, 0}, "bomb_1", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 100, Y: 0, Z: 0}, "bomb_1", 80, "")
 
 	// 感知过滤
 	canPerceive := perception.CanPerceive(inst.Position, inst.Perception, evt, explosionCfg)
@@ -131,12 +131,12 @@ func TestIntegration_Scenario2_RecoverAfterEventExpires(t *testing.T) {
 	evtTypes := loadEvtTypes(t, src)
 	center := decision.NewCenter(20.0) // 较高衰减率便于测试
 
-	inst := createCivilian(t, "npc_1", event.Vec3{0, 0, 0}, src, btReg)
+	inst := createCivilian(t, "npc_1", event.Vec3{X: 0, Y: 0, Z: 0}, src, btReg)
 	blackboard.Set(inst.BB, blackboard.KeyCurrentTime, int64(10000))
 
 	// 发布事件并驱动到 Flee
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{100, 0, 0}, "bomb_1", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 100, Y: 0, Z: 0}, "bomb_1", 80, "")
 	bus := event.NewBus()
 	bus.Publish(evt)
 
@@ -183,14 +183,14 @@ func TestIntegration_Scenario3_MultiEventPriority(t *testing.T) {
 	evtTypes := loadEvtTypes(t, src)
 	center := decision.NewCenter(10.0)
 
-	inst := createCivilian(t, "npc_1", event.Vec3{0, 0, 0}, src, btReg)
+	inst := createCivilian(t, "npc_1", event.Vec3{X: 0, Y: 0, Z: 0}, src, btReg)
 	blackboard.Set(inst.BB, blackboard.KeyCurrentTime, int64(10000))
 
 	// 同时两个事件
 	gunshotCfg := evtTypes["gunshot"]
 	shoutCfg := evtTypes["shout"]
-	gunshotEvt := event.NewEvent(gunshotCfg, event.Vec3{50, 0, 0}, "shooter_1", 90, "")
-	shoutEvt := event.NewEvent(shoutCfg, event.Vec3{50, 0, 0}, "npc_2", 30, "")
+	gunshotEvt := event.NewEvent(gunshotCfg, event.Vec3{X: 50, Y: 0, Z: 0}, "shooter_1", 90, "")
+	shoutEvt := event.NewEvent(shoutCfg, event.Vec3{X: 50, Y: 0, Z: 0}, "npc_2", 30, "")
 
 	events := []*event.Event{shoutEvt, gunshotEvt} // shout 先，gunshot 后
 	center.Evaluate(inst.BB, inst.Position, decision.DecisionInput{Perceived: eventsToPerceived(inst.Position, events, evtTypes), Weights: decision.DefaultWeights}, evtTypes, 0.1)
@@ -215,12 +215,12 @@ func TestIntegration_Scenario4_EventPreemption(t *testing.T) {
 	evtTypes := loadEvtTypes(t, src)
 	center := decision.NewCenter(10.0)
 
-	inst := createCivilian(t, "npc_1", event.Vec3{0, 0, 0}, src, btReg)
+	inst := createCivilian(t, "npc_1", event.Vec3{X: 0, Y: 0, Z: 0}, src, btReg)
 	blackboard.Set(inst.BB, blackboard.KeyCurrentTime, int64(10000))
 
 	// t0: 低威胁事件（shout severity=30）
 	shoutCfg := evtTypes["shout"]
-	shoutEvt := event.NewEvent(shoutCfg, event.Vec3{50, 0, 0}, "npc_2", 30, "")
+	shoutEvt := event.NewEvent(shoutCfg, event.Vec3{X: 50, Y: 0, Z: 0}, "npc_2", 30, "")
 	center.Evaluate(inst.BB, inst.Position, decision.DecisionInput{Perceived: eventsToPerceived(inst.Position, []*event.Event{shoutEvt}, evtTypes), Weights: decision.DefaultWeights}, evtTypes, 0.1)
 	inst.Tick() // → Alarmed（last_event_type != ""）
 
@@ -245,7 +245,7 @@ func TestIntegration_Scenario4_EventPreemption(t *testing.T) {
 
 	// t6: 高威胁事件到达（gunshot severity=90）
 	gunshotCfg := evtTypes["gunshot"]
-	gunshotEvt := event.NewEvent(gunshotCfg, event.Vec3{50, 0, 0}, "shooter_1", 90, "")
+	gunshotEvt := event.NewEvent(gunshotCfg, event.Vec3{X: 50, Y: 0, Z: 0}, "shooter_1", 90, "")
 	center.Evaluate(inst.BB, inst.Position, decision.DecisionInput{Perceived: eventsToPerceived(inst.Position, []*event.Event{shoutEvt, gunshotEvt}, evtTypes), Weights: decision.DefaultWeights}, evtTypes, 0.1)
 
 	levelAfter, _ := blackboard.Get(inst.BB, blackboard.KeyThreatLevel)
@@ -278,11 +278,11 @@ func TestIntegration_Scenario5_NewEventTypeFromConfig(t *testing.T) {
 
 	// 创建 NPC
 	btReg := bt.DefaultRegistry()
-	inst := createCivilian(t, "npc_1", event.Vec3{0, 0, 0}, src, btReg)
+	inst := createCivilian(t, "npc_1", event.Vec3{X: 0, Y: 0, Z: 0}, src, btReg)
 	blackboard.Set(inst.BB, blackboard.KeyCurrentTime, int64(10000))
 
 	// 发布 fire 事件
-	fireEvt := event.NewEvent(&fireConfig, event.Vec3{50, 0, 0}, "fire_1", 60, "")
+	fireEvt := event.NewEvent(&fireConfig, event.Vec3{X: 50, Y: 0, Z: 0}, "fire_1", 60, "")
 
 	// 感知过滤：visual mode, distance=50, min(visual_range=200, range=150)=150 → 50<=150
 	canPerceive := perception.CanPerceive(inst.Position, inst.Perception, fireEvt, &fireConfig)
@@ -319,7 +319,7 @@ func TestIntegration_Scenario6_RuntimeCoreCrossLayer(t *testing.T) {
 	evtTypes := loadEvtTypes(t, src)
 
 	// 完整链路：JSON 配置 → NPC 工厂 → 事件 → 感知 → 决策 → FSM → BT
-	inst := createCivilian(t, "npc_1", event.Vec3{0, 0, 0}, src, btReg)
+	inst := createCivilian(t, "npc_1", event.Vec3{X: 0, Y: 0, Z: 0}, src, btReg)
 	blackboard.Set(inst.BB, blackboard.KeyCurrentTime, int64(10000))
 
 	// 验证 core 层的 FSM 从配置正确加载
@@ -335,7 +335,7 @@ func TestIntegration_Scenario6_RuntimeCoreCrossLayer(t *testing.T) {
 
 	// 完整链路：事件 → 决策 → BB → FSM 转换 → BT 执行
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{50, 0, 0}, "bomb_1", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 50, Y: 0, Z: 0}, "bomb_1", 80, "")
 
 	center := decision.NewCenter(10.0)
 	center.Evaluate(inst.BB, inst.Position, decision.DecisionInput{Perceived: eventsToPerceived(inst.Position, []*event.Event{evt}, evtTypes), Weights: decision.DefaultWeights}, evtTypes, 0.1)

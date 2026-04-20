@@ -169,9 +169,7 @@ func (s *Scheduler) shareGroupPerception(states []npcTickState) {
 		if !ok || social.GroupID == "" {
 			continue
 		}
-		for _, pr := range states[i].perceived {
-			groupPerceived[social.GroupID] = append(groupPerceived[social.GroupID], pr)
-		}
+		groupPerceived[social.GroupID] = append(groupPerceived[social.GroupID], states[i].perceived...)
 	}
 
 	// 去重（同 Event.ID 保留 Strength 最高）并分发回每个成员

@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
-	bb "github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 )
 
@@ -37,16 +36,16 @@ func TestMovement_Wander_Moves(t *testing.T) {
 	m.SetSpawn(100, 200)
 
 	board := blackboard.New()
-	blackboard.Set(board, bb.KeyNPCPosX, 100.0)
-	blackboard.Set(board, bb.KeyNPCPosZ, 200.0)
+	blackboard.Set(board, blackboard.KeyNPCPosX, 100.0)
+	blackboard.Set(board, blackboard.KeyNPCPosZ, 200.0)
 
 	// 多次 Tick，位置应变化
 	for i := 0; i < 10; i++ {
 		m.Tick(board, 0.1)
 	}
 
-	x, _ := bb.Get(board, bb.KeyNPCPosX)
-	z, _ := bb.Get(board, bb.KeyNPCPosZ)
+	x, _ := blackboard.Get(board, blackboard.KeyNPCPosX)
+	z, _ := blackboard.Get(board, blackboard.KeyNPCPosZ)
 
 	// 位置不应该还在 spawn 点（概率极低除非随机到原点）
 	moved := math.Abs(x-100) > 0.01 || math.Abs(z-200) > 0.01
@@ -54,7 +53,7 @@ func TestMovement_Wander_Moves(t *testing.T) {
 		t.Error("NPC should have moved from spawn point after 10 ticks")
 	}
 
-	state, _ := bb.Get(board, bb.KeyMoveState)
+	state, _ := blackboard.Get(board, blackboard.KeyMoveState)
 	if state != "moving" && state != "arrived" {
 		t.Errorf("move_state = %q, want moving or arrived", state)
 	}
@@ -66,14 +65,14 @@ func TestMovement_Patrol_Cycles(t *testing.T) {
 	m := comp.(*component.MovementComponent)
 
 	board := blackboard.New()
-	blackboard.Set(board, bb.KeyNPCPosX, 0.0)
-	blackboard.Set(board, bb.KeyNPCPosZ, 0.0)
+	blackboard.Set(board, blackboard.KeyNPCPosX, 0.0)
+	blackboard.Set(board, blackboard.KeyNPCPosZ, 0.0)
 
 	// 快速到达每个路点（speed=100, dt=0.5 → step=50m >> 距离）
 	arrivedCount := 0
 	for i := 0; i < 20; i++ {
 		m.Tick(board, 0.5)
-		state, _ := bb.Get(board, bb.KeyMoveState)
+		state, _ := blackboard.Get(board, blackboard.KeyMoveState)
 		if state == "arrived" {
 			arrivedCount++
 		}

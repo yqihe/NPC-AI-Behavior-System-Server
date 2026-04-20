@@ -82,7 +82,7 @@ func makeTestInstance(id string) *Instance {
 	return &Instance{
 		ID:         id,
 		TypeName:   "civilian",
-		Position:   event.Vec3{0, 0, 0},
+		Position:   event.Vec3{X: 0, Y: 0, Z: 0},
 		BB:         bb,
 		FSM:        f,
 		BTrees:     btrees,

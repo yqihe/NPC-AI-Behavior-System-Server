@@ -26,8 +26,8 @@ func makeEvt(pos event.Vec3) *event.Event {
 
 func TestCalcStrength_Global(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "global", Range: 100}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{99999, 0, 99999})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 99999, Y: 0, Z: 99999})
 	s := CalcStrength(npc, defaultCfg, evt, evtType)
 	if s != 80 {
 		t.Errorf("global strength = %f, want 80 (= severity)", s)
@@ -36,8 +36,8 @@ func TestCalcStrength_Global(t *testing.T) {
 
 func TestCalcStrength_Visual_Close(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 300}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{10, 0, 0}) // dist=10, maxRange=min(200,300)=200
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 10, Y: 0, Z: 0}) // dist=10, maxRange=min(200,300)=200
 	s := CalcStrength(npc, defaultCfg, evt, evtType)
 	expected := 80 * (1 - 10.0/200.0) // 80 * 0.95 = 76
 	if math.Abs(s-expected) > 0.01 {
@@ -47,8 +47,8 @@ func TestCalcStrength_Visual_Close(t *testing.T) {
 
 func TestCalcStrength_Visual_Mid(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 300}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{100, 0, 0}) // dist=100, maxRange=200
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 100, Y: 0, Z: 0}) // dist=100, maxRange=200
 	s := CalcStrength(npc, defaultCfg, evt, evtType)
 	expected := 80 * (1 - 100.0/200.0) // 80 * 0.5 = 40
 	if math.Abs(s-expected) > 0.01 {
@@ -58,8 +58,8 @@ func TestCalcStrength_Visual_Mid(t *testing.T) {
 
 func TestCalcStrength_Visual_OutOfRange(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 300}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{250, 0, 0}) // dist=250 > maxRange=200
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 250, Y: 0, Z: 0}) // dist=250 > maxRange=200
 	s := CalcStrength(npc, defaultCfg, evt, evtType)
 	if s != 0 {
 		t.Errorf("strength = %f, want 0 (out of range)", s)
@@ -68,8 +68,8 @@ func TestCalcStrength_Visual_OutOfRange(t *testing.T) {
 
 func TestCalcStrength_Visual_ZeroDistance(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 300}
-	npc := event.Vec3{50, 0, 50}
-	evt := makeEvt(event.Vec3{50, 0, 50}) // dist=0
+	npc := event.Vec3{X: 50, Y: 0, Z: 50}
+	evt := makeEvt(event.Vec3{X: 50, Y: 0, Z: 50}) // dist=0
 	s := CalcStrength(npc, defaultCfg, evt, evtType)
 	if s != 80 {
 		t.Errorf("strength at zero distance = %f, want 80 (= severity)", s)
@@ -78,8 +78,8 @@ func TestCalcStrength_Visual_ZeroDistance(t *testing.T) {
 
 func TestCalcStrength_Auditory_InRange(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "auditory", Range: 500}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{250, 0, 0}) // dist=250, maxRange=500
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 250, Y: 0, Z: 0}) // dist=250, maxRange=500
 	s := CalcStrength(npc, defaultCfg, evt, evtType)
 	expected := 80 * (1 - 250.0/500.0) // 80 * 0.5 = 40
 	if math.Abs(s-expected) > 0.01 {
@@ -89,8 +89,8 @@ func TestCalcStrength_Auditory_InRange(t *testing.T) {
 
 func TestCalcStrength_UnknownMode(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "telepathy", Range: 9999}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{1, 0, 0})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 1, Y: 0, Z: 0})
 	s := CalcStrength(npc, defaultCfg, evt, evtType)
 	if s != 0 {
 		t.Errorf("unknown mode strength = %f, want 0", s)
@@ -101,8 +101,8 @@ func TestCalcStrength_UnknownMode(t *testing.T) {
 
 func TestCanPerceive_Global_AlwaysTrue(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "global", Range: 100}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{99999, 0, 99999})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 99999, Y: 0, Z: 99999})
 	if !CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("global mode should always perceive")
 	}
@@ -110,8 +110,8 @@ func TestCanPerceive_Global_AlwaysTrue(t *testing.T) {
 
 func TestCanPerceive_Visual_InRange(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 300}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{100, 0, 0})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 100, Y: 0, Z: 0})
 	if !CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("should perceive: distance 100 <= visual_range 200")
 	}
@@ -119,8 +119,8 @@ func TestCanPerceive_Visual_InRange(t *testing.T) {
 
 func TestCanPerceive_Visual_OutOfRange(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 300}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{250, 0, 0})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 250, Y: 0, Z: 0})
 	if CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("should not perceive: distance 250 > visual_range 200")
 	}
@@ -128,8 +128,8 @@ func TestCanPerceive_Visual_OutOfRange(t *testing.T) {
 
 func TestCanPerceive_Visual_EventRangeLimits(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 100}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{150, 0, 0})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 150, Y: 0, Z: 0})
 	if CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("should not perceive: distance 150 > event range 100")
 	}
@@ -137,8 +137,8 @@ func TestCanPerceive_Visual_EventRangeLimits(t *testing.T) {
 
 func TestCanPerceive_Visual_ExactBoundary(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 300}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{200, 0, 0}) // dist == visual_range
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 200, Y: 0, Z: 0}) // dist == visual_range
 	if !CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("should perceive at exact boundary")
 	}
@@ -146,8 +146,8 @@ func TestCanPerceive_Visual_ExactBoundary(t *testing.T) {
 
 func TestCanPerceive_Auditory_InRange(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "auditory", Range: 500}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{400, 0, 0})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 400, Y: 0, Z: 0})
 	if !CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("should perceive: distance 400 <= auditory_range 500")
 	}
@@ -155,8 +155,8 @@ func TestCanPerceive_Auditory_InRange(t *testing.T) {
 
 func TestCanPerceive_Auditory_OutOfRange(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "auditory", Range: 600}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{550, 0, 0})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 550, Y: 0, Z: 0})
 	if CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("should not perceive: distance 550 > auditory_range 500")
 	}
@@ -164,8 +164,8 @@ func TestCanPerceive_Auditory_OutOfRange(t *testing.T) {
 
 func TestCanPerceive_Auditory_ExactBoundary(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "auditory", Range: 600}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{500, 0, 0})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 500, Y: 0, Z: 0})
 	if !CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("should perceive at exact boundary")
 	}
@@ -173,8 +173,8 @@ func TestCanPerceive_Auditory_ExactBoundary(t *testing.T) {
 
 func TestCanPerceive_UnknownMode(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "telepathy", Range: 9999}
-	npc := event.Vec3{0, 0, 0}
-	evt := makeEvt(event.Vec3{1, 0, 0})
+	npc := event.Vec3{X: 0, Y: 0, Z: 0}
+	evt := makeEvt(event.Vec3{X: 1, Y: 0, Z: 0})
 	if CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("unknown perception mode should return false")
 	}
@@ -182,8 +182,8 @@ func TestCanPerceive_UnknownMode(t *testing.T) {
 
 func TestCanPerceive_ZeroDistance(t *testing.T) {
 	evtType := &event.EventTypeConfig{PerceptionMode: "visual", Range: 100}
-	npc := event.Vec3{50, 0, 50}
-	evt := makeEvt(event.Vec3{50, 0, 50})
+	npc := event.Vec3{X: 50, Y: 0, Z: 50}
+	evt := makeEvt(event.Vec3{X: 50, Y: 0, Z: 50})
 	if !CanPerceive(npc, defaultCfg, evt, evtType) {
 		t.Error("should perceive at zero distance")
 	}

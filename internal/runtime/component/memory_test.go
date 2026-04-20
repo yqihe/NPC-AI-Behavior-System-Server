@@ -5,7 +5,6 @@ import (
 	"testing"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
-	bb "github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 )
 
@@ -154,7 +153,7 @@ func TestMemory_Tick_TTLDecay(t *testing.T) {
 		t.Error("e2 should be expired")
 	}
 
-	count, _ := bb.Get(board, bb.KeyMemoryCount)
+	count, _ := blackboard.Get(board, blackboard.KeyMemoryCount)
 	if count != 1 {
 		t.Errorf("BB memory_count = %d, want 1", count)
 	}
@@ -169,7 +168,7 @@ func TestMemory_Tick_ThreatValue(t *testing.T) {
 	board := blackboard.New()
 	m.Tick(board, 0.1)
 
-	tv, _ := bb.Get(board, bb.KeyMemoryThreatValue)
+	tv, _ := blackboard.Get(board, blackboard.KeyMemoryThreatValue)
 	if tv != 80 {
 		t.Errorf("memory_threat_value = %f, want 80 (max threat memory)", tv)
 	}
@@ -182,7 +181,7 @@ func TestMemory_Tick_NoThreatMemory(t *testing.T) {
 	board := blackboard.New()
 	m.Tick(board, 0.1)
 
-	tv, _ := bb.Get(board, bb.KeyMemoryThreatValue)
+	tv, _ := blackboard.Get(board, blackboard.KeyMemoryThreatValue)
 	if tv != 0 {
 		t.Errorf("memory_threat_value = %f, want 0 (no threat memories)", tv)
 	}

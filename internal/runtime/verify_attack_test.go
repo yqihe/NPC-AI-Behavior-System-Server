@@ -83,9 +83,9 @@ func TestAttack_Bus_ConcurrentPublishAndTick(t *testing.T) {
 func TestAttack_Perception_ZeroRange(t *testing.T) {
 	cfg := &perception.PerceptionConfig{VisualRange: 0, AuditoryRange: 0}
 	evtCfg := &event.EventTypeConfig{PerceptionMode: "visual", Range: 100}
-	evt := &event.Event{Position: event.Vec3{0, 0, 0}}
+	evt := &event.Event{Position: event.Vec3{X: 0, Y: 0, Z: 0}}
 	// visual_range=0 → maxRange=0 → 无感知能力 → false（v3 行为变更：零范围=无感知）
-	result := perception.CanPerceive(event.Vec3{0, 0, 0}, cfg, evt, evtCfg)
+	result := perception.CanPerceive(event.Vec3{X: 0, Y: 0, Z: 0}, cfg, evt, evtCfg)
 	if result {
 		t.Error("zero visual_range means no perception ability")
 	}
@@ -94,9 +94,9 @@ func TestAttack_Perception_ZeroRange(t *testing.T) {
 func TestAttack_Perception_NegativeRange(t *testing.T) {
 	cfg := &perception.PerceptionConfig{VisualRange: -100, AuditoryRange: -100}
 	evtCfg := &event.EventTypeConfig{PerceptionMode: "auditory", Range: 100}
-	evt := &event.Event{Position: event.Vec3{0, 0, 0}}
+	evt := &event.Event{Position: event.Vec3{X: 0, Y: 0, Z: 0}}
 	// min(-100, 100)=-100, distance=0 → 0<=-100 → false
-	result := perception.CanPerceive(event.Vec3{0, 0, 0}, cfg, evt, evtCfg)
+	result := perception.CanPerceive(event.Vec3{X: 0, Y: 0, Z: 0}, cfg, evt, evtCfg)
 	if result {
 		t.Error("negative range should not perceive")
 	}
@@ -105,9 +105,9 @@ func TestAttack_Perception_NegativeRange(t *testing.T) {
 func TestAttack_Perception_VeryLargeDistance(t *testing.T) {
 	cfg := &perception.PerceptionConfig{VisualRange: 1e10, AuditoryRange: 1e10}
 	evtCfg := &event.EventTypeConfig{PerceptionMode: "visual", Range: 1e10}
-	evt := &event.Event{Position: event.Vec3{1e9, 0, 1e9}}
+	evt := &event.Event{Position: event.Vec3{X: 1e9, Y: 0, Z: 1e9}}
 	// 不应 panic
-	_ = perception.CanPerceive(event.Vec3{0, 0, 0}, cfg, evt, evtCfg)
+	_ = perception.CanPerceive(event.Vec3{X: 0, Y: 0, Z: 0}, cfg, evt, evtCfg)
 }
 
 // === Decision 攻击 ===
@@ -237,7 +237,7 @@ func TestAttack_Scheduler_RapidTicks(t *testing.T) {
 		reg.Add(inst)
 	}
 	explosionCfg := evtTypes["explosion"]
-	bus.Publish(event.NewEvent(explosionCfg, event.Vec3{50, 0, 0}, "bomb", 80, ""))
+	bus.Publish(event.NewEvent(explosionCfg, event.Vec3{X: 50, Y: 0, Z: 0}, "bomb", 80, ""))
 
 	center := decision.NewCenter(10.0)
 	scheduler := runtime.NewScheduler(bus, reg, center, evtTypes, 100*time.Millisecond)

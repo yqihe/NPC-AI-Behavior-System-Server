@@ -27,21 +27,21 @@ func defaultInput(perceived []perception.PerceiveResult) DecisionInput {
 // --- CalcThreat ---
 
 func TestCalcThreat_ZeroDistance(t *testing.T) {
-	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{0, 0, 0}, 500)
+	threat := CalcThreat(80, event.Vec3{X: 0, Y: 0, Z: 0}, event.Vec3{X: 0, Y: 0, Z: 0}, 500)
 	if threat != 80 {
 		t.Errorf("expected 80, got %f", threat)
 	}
 }
 
 func TestCalcThreat_HalfRange(t *testing.T) {
-	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{250, 0, 0}, 500)
+	threat := CalcThreat(80, event.Vec3{X: 0, Y: 0, Z: 0}, event.Vec3{X: 250, Y: 0, Z: 0}, 500)
 	if threat != 40 {
 		t.Errorf("expected 40, got %f", threat)
 	}
 }
 
 func TestCalcThreat_AtRange(t *testing.T) {
-	threat := CalcThreat(80, event.Vec3{0, 0, 0}, event.Vec3{500, 0, 0}, 500)
+	threat := CalcThreat(80, event.Vec3{X: 0, Y: 0, Z: 0}, event.Vec3{X: 500, Y: 0, Z: 0}, 500)
 	if threat != 0 {
 		t.Errorf("expected 0, got %f", threat)
 	}
@@ -54,7 +54,7 @@ func TestEvaluate_ThreatOnly(t *testing.T) {
 	blackboard.Set(bb, blackboard.KeyCurrentTime, int64(10000))
 
 	center := NewCenter(10.0)
-	evt := &event.Event{ID: "evt_1", Type: "explosion", Position: event.Vec3{100, 0, 0}, Severity: 80, TTL: 10}
+	evt := &event.Event{ID: "evt_1", Type: "explosion", Position: event.Vec3{X: 100, Y: 0, Z: 0}, Severity: 80, TTL: 10}
 
 	center.Evaluate(bb, event.Vec3{}, defaultInput([]perception.PerceiveResult{pr(evt, 64)}), evtTypes(), 0.1)
 

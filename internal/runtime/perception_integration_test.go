@@ -48,7 +48,7 @@ func TestPerceptionIntegration_AttentionCapacity(t *testing.T) {
 	explosionCfg := evtTypes["explosion"]
 	for i := 0; i < 5; i++ {
 		dist := float64(50 + i*30) // 50, 80, 110, 140, 170m
-		evt := event.NewEvent(explosionCfg, event.Vec3{300 + dist, 0, 400}, "bomb", 80, "")
+		evt := event.NewEvent(explosionCfg, event.Vec3{X: 300 + dist, Y: 0, Z: 400}, "bomb", 80, "")
 		bus.Publish(evt)
 	}
 
@@ -96,7 +96,7 @@ func TestPerceptionIntegration_ZoneIsolation(t *testing.T) {
 	explosionCfg := evtTypes["explosion"]
 
 	// 事件在不同区域（mountain），auditory 模式
-	evtOtherZone := event.NewEvent(explosionCfg, event.Vec3{350, 0, 400}, "bomb_far", 80, "mountain")
+	evtOtherZone := event.NewEvent(explosionCfg, event.Vec3{X: 350, Y: 0, Z: 400}, "bomb_far", 80, "mountain")
 	bus.Publish(evtOtherZone)
 
 	reg := npc.NewRegistry()
@@ -115,7 +115,7 @@ func TestPerceptionIntegration_ZoneIsolation(t *testing.T) {
 
 	// 发布 global 事件（应无视区域）
 	earthquakeCfg := evtTypes["earthquake"]
-	evtGlobal := event.NewEvent(earthquakeCfg, event.Vec3{0, 0, 0}, "quake", 100, "mountain")
+	evtGlobal := event.NewEvent(earthquakeCfg, event.Vec3{X: 0, Y: 0, Z: 0}, "quake", 100, "mountain")
 	bus.Publish(evtGlobal)
 
 	sched.Tick(0.1)
@@ -144,8 +144,8 @@ func TestPerceptionIntegration_StrengthPassthrough(t *testing.T) {
 	explosionCfg := evtTypes["explosion"]
 
 	// 近距离事件（10m）和远距离事件（140m）— 相对于 NPC 位置 (100,0,100)
-	evtClose := event.NewEvent(explosionCfg, event.Vec3{110, 0, 100}, "close", 80, "")
-	evtFar := event.NewEvent(explosionCfg, event.Vec3{240, 0, 100}, "far", 80, "")
+	evtClose := event.NewEvent(explosionCfg, event.Vec3{X: 110, Y: 0, Z: 100}, "close", 80, "")
+	evtFar := event.NewEvent(explosionCfg, event.Vec3{X: 240, Y: 0, Z: 100}, "far", 80, "")
 	bus.Publish(evtClose)
 	bus.Publish(evtFar)
 

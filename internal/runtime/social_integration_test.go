@@ -37,8 +37,8 @@ func TestSocialIntegration_GroupPerceptionSharing(t *testing.T) {
 	evtTypes := loadEvtTypes(t, src)
 
 	// 两只狼同组：wolf_a 在爆炸附近，wolf_b 在远处
-	wolfA := createGroupNPC(t, "wolf_a", event.Vec3{100, 0, 100}, "pack1", "leader", src, btReg, compReg)
-	wolfB := createGroupNPC(t, "wolf_b", event.Vec3{500, 0, 500}, "pack1", "follower", src, btReg, compReg)
+	wolfA := createGroupNPC(t, "wolf_a", event.Vec3{X: 100, Y: 0, Z: 100}, "pack1", "leader", src, btReg, compReg)
+	wolfB := createGroupNPC(t, "wolf_b", event.Vec3{X: 500, Y: 0, Z: 500}, "pack1", "follower", src, btReg, compReg)
 
 	gm := social.NewGroupManager()
 	gm.Register(wolfA)
@@ -54,7 +54,7 @@ func TestSocialIntegration_GroupPerceptionSharing(t *testing.T) {
 
 	// 爆炸在 wolf_a 附近（wolf_b 感知不到）
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{120, 0, 100}, "bomber", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 120, Y: 0, Z: 100}, "bomber", 80, "")
 	bus.Publish(evt)
 
 	blackboard.Set(wolfA.BB, blackboard.KeyCurrentTime, int64(10000))
@@ -81,8 +81,8 @@ func TestSocialIntegration_LeaderLost(t *testing.T) {
 	btReg := bt.DefaultRegistry()
 	compReg := component.DefaultRegistry()
 
-	leader := createGroupNPC(t, "leader", event.Vec3{100, 0, 100}, "pack1", "leader", src, btReg, compReg)
-	follower := createGroupNPC(t, "follower", event.Vec3{110, 0, 100}, "pack1", "follower", src, btReg, compReg)
+	leader := createGroupNPC(t, "leader", event.Vec3{X: 100, Y: 0, Z: 100}, "pack1", "leader", src, btReg, compReg)
+	follower := createGroupNPC(t, "follower", event.Vec3{X: 110, Y: 0, Z: 100}, "pack1", "follower", src, btReg, compReg)
 
 	gm := social.NewGroupManager()
 	gm.Register(leader)
@@ -105,8 +105,8 @@ func TestSocialIntegration_GroupAlert(t *testing.T) {
 	compReg := component.DefaultRegistry()
 	evtTypes := loadEvtTypes(t, src)
 
-	wolfA := createGroupNPC(t, "wolf_a", event.Vec3{100, 0, 100}, "pack1", "leader", src, btReg, compReg)
-	wolfB := createGroupNPC(t, "wolf_b", event.Vec3{110, 0, 100}, "pack1", "follower", src, btReg, compReg)
+	wolfA := createGroupNPC(t, "wolf_a", event.Vec3{X: 100, Y: 0, Z: 100}, "pack1", "leader", src, btReg, compReg)
+	wolfB := createGroupNPC(t, "wolf_b", event.Vec3{X: 110, Y: 0, Z: 100}, "pack1", "follower", src, btReg, compReg)
 
 	gm := social.NewGroupManager()
 	gm.Register(wolfA)
@@ -122,7 +122,7 @@ func TestSocialIntegration_GroupAlert(t *testing.T) {
 
 	// 发布高威胁事件让 wolf_a 进入 Flee
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{105, 0, 100}, "bomber", 90, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 105, Y: 0, Z: 100}, "bomber", 90, "")
 	bus.Publish(evt)
 
 	blackboard.Set(wolfA.BB, blackboard.KeyCurrentTime, int64(10000))

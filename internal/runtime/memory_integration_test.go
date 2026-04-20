@@ -36,7 +36,7 @@ func TestMemoryIntegration_EventToMemoryToEmotion(t *testing.T) {
 
 	bus := event.NewBus()
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{120, 0, 100}, "bomber_1", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 120, Y: 0, Z: 100}, "bomber_1", 80, "")
 	bus.Publish(evt)
 
 	reg := npc.NewRegistry()
@@ -149,7 +149,7 @@ func TestMemoryIntegration_RepeatedStimulus_Reinforcement(t *testing.T) {
 	blackboard.Set(inst.BB, blackboard.KeyCurrentTime, int64(10000))
 
 	// 第一次事件
-	evt1 := event.NewEvent(explosionCfg, event.Vec3{120, 0, 100}, "bomber_1", 50, "")
+	evt1 := event.NewEvent(explosionCfg, event.Vec3{X: 120, Y: 0, Z: 100}, "bomber_1", 50, "")
 	bus.Publish(evt1)
 	sched.Tick(0.1)
 
@@ -164,7 +164,7 @@ func TestMemoryIntegration_RepeatedStimulus_Reinforcement(t *testing.T) {
 	bus.Tick(100) // 让事件过期
 
 	// 第二次事件（更高 severity）
-	evt2 := event.NewEvent(explosionCfg, event.Vec3{110, 0, 100}, "bomber_1", 80, "")
+	evt2 := event.NewEvent(explosionCfg, event.Vec3{X: 110, Y: 0, Z: 100}, "bomber_1", 80, "")
 	bus.Publish(evt2)
 	sched.Tick(0.1)
 

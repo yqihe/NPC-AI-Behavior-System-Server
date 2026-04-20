@@ -4,8 +4,6 @@ package experiment
 
 import (
 	"fmt"
-	"math"
-	"sort"
 	"strings"
 	"testing"
 )
@@ -93,23 +91,6 @@ func calcResponseTicks(records []TickRecord) []int {
 		}
 	}
 	return ticks
-}
-
-func percentile(data []int, p float64) float64 {
-	if len(data) == 0 {
-		return 0
-	}
-	sorted := make([]int, len(data))
-	copy(sorted, data)
-	sort.Ints(sorted)
-	idx := int(math.Ceil(p/100*float64(len(sorted)))) - 1
-	if idx < 0 {
-		idx = 0
-	}
-	if idx >= len(sorted) {
-		idx = len(sorted) - 1
-	}
-	return float64(sorted[idx])
 }
 
 // ComparisonReport 多模式对比报告

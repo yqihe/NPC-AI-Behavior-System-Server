@@ -48,7 +48,7 @@ func TestComponentIntegration_SimpleNPC_NoAIPipeline(t *testing.T) {
 
 	// 发布事件（尽管近，perception_range=0 令其超出感知）
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{100, 0, 200}, "bomb_1", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 100, Y: 0, Z: 200}, "bomb_1", 80, "")
 	bus.Publish(evt)
 
 	sched.Tick(0.1)
@@ -113,7 +113,7 @@ func TestComponentIntegration_ReactiveNPC_FullPipeline(t *testing.T) {
 
 	// 发布爆炸事件（近距离）
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{350, 0, 400}, "bomb_1", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 350, Y: 0, Z: 400}, "bomb_1", 80, "")
 	bus.Publish(evt)
 
 	// Tick → 应走完整管线
@@ -169,7 +169,7 @@ func TestComponentIntegration_MixedTick(t *testing.T) {
 
 	// 发布事件（在狼附近）
 	explosionCfg := evtTypes["explosion"]
-	evt := event.NewEvent(explosionCfg, event.Vec3{350, 0, 400}, "bomb_1", 80, "")
+	evt := event.NewEvent(explosionCfg, event.Vec3{X: 350, Y: 0, Z: 400}, "bomb_1", 80, "")
 	bus.Publish(evt)
 
 	blackboard.Set(butterfly.BB, blackboard.KeyCurrentTime, int64(10000))

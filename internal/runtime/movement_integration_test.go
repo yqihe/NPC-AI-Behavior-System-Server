@@ -18,10 +18,7 @@ import (
 )
 
 func TestMovementIntegration_WanderPositionChanges(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 蝴蝶：wander 模式（ADMIN shape，T1 翻译层推断 move_type=wander）
 	inst, err := npctest.NewInstanceWithExtras("b1", event.Vec3{X: 100, Z: 200},
@@ -59,10 +56,7 @@ func TestMovementIntegration_WanderPositionChanges(t *testing.T) {
 }
 
 func TestMovementIntegration_PatrolCycles(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 狼：ADMIN shape 走 wander 模式（T1 翻译层推断 move_type=wander；
 	// 原 wolf_common.json 的 patrol 语义由 BT 层承担，不影响 arrived 次数断言）

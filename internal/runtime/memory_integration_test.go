@@ -5,9 +5,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/config"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
-	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/bt"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/component"
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/runtime/decision"
@@ -19,10 +17,7 @@ import (
 // --- 事件→记忆→情绪链路 ---
 
 func TestMemoryIntegration_EventToMemoryToEmotion(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	extras := map[string]json.RawMessage{
 		"memory":  []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":30}`),
@@ -67,10 +62,7 @@ func TestMemoryIntegration_EventToMemoryToEmotion(t *testing.T) {
 // --- 记忆过期后情绪恢复 ---
 
 func TestMemoryIntegration_MemoryExpiry_EmotionRecovery(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	extras := map[string]json.RawMessage{
 		"memory":  []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":2}`), // 短 TTL
@@ -124,10 +116,7 @@ func TestMemoryIntegration_MemoryExpiry_EmotionRecovery(t *testing.T) {
 // --- 重复刺激强化 ---
 
 func TestMemoryIntegration_RepeatedStimulus_Reinforcement(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	extras := map[string]json.RawMessage{
 		"memory": []byte(`{"capacity":10,"memory_types":["threat"],"decay_time":60}`),

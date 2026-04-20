@@ -32,10 +32,7 @@ func butterflyInstance(t *testing.T, id string, pos event.Vec3, src config.Sourc
 // --- 休眠区域 NPC 不 Tick ---
 
 func TestZoneIntegration_SleepSkipsTick(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	// 创建两个 NPC：一个在 meadow（将休眠），一个在 forest（活跃）
 	meadowNPC := butterflyInstance(t, "m1", event.Vec3{X: 100, Z: 200}, src, btReg, compReg)
@@ -95,10 +92,7 @@ func TestZoneIntegration_SleepSkipsTick(t *testing.T) {
 // --- 唤醒后恢复 ---
 
 func TestZoneIntegration_WakeResumes(t *testing.T) {
-	src := config.NewJSONSource(configsDir(t))
-	btReg := bt.DefaultRegistry()
-	compReg := component.DefaultRegistry()
-	evtTypes := loadEvtTypes(t, src)
+	src, btReg, compReg, evtTypes := newTestEnv(t)
 
 	inst := butterflyInstance(t, "b1", event.Vec3{X: 100, Z: 200}, src, btReg, compReg)
 	if pos, ok := npc.GetComponent[*component.PositionComponent](inst, "position"); ok {

@@ -1,5 +1,4 @@
 {
-  "initial_state": "Patrol",
   "states": [
     {
       "name": "Patrol"
@@ -13,29 +12,29 @@
   ],
   "transitions": [
     {
-      "from": "Patrol",
       "to": "Alert",
+      "from": "Patrol",
       "priority": 10,
       "condition": {
-        "key": "last_event_type",
         "op": "!=",
+        "key": "last_event_type",
         "value": ""
       }
     },
     {
-      "from": "Alert",
       "to": "Defend",
+      "from": "Alert",
       "priority": 10,
       "condition": {
         "and": [
           {
-            "key": "threat_level",
             "op": "\u003e=",
+            "key": "threat_level",
             "value": 60
           },
           {
-            "key": "threat_expire_at",
             "op": "\u003e",
+            "key": "threat_expire_at",
             "value": "",
             "ref_key": "current_time"
           }
@@ -43,34 +42,35 @@
       }
     },
     {
-      "from": "Alert",
       "to": "Patrol",
+      "from": "Alert",
       "priority": 5,
       "condition": {
-        "key": "last_event_type",
         "op": "==",
+        "key": "last_event_type",
         "value": ""
       }
     },
     {
-      "from": "Defend",
       "to": "Patrol",
+      "from": "Defend",
       "priority": 5,
       "condition": {
         "or": [
           {
-            "key": "threat_level",
             "op": "\u003c",
+            "key": "threat_level",
             "value": 20
           },
           {
-            "key": "threat_expire_at",
             "op": "\u003c=",
+            "key": "threat_expire_at",
             "value": "",
             "ref_key": "current_time"
           }
         ]
       }
     }
-  ]
+  ],
+  "initial_state": "Patrol"
 }

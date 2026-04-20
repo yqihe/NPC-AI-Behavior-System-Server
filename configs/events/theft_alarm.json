@@ -1,0 +1,8 @@
+{
+  "default_severity": 80,
+  "default_ttl": 15,
+  "display_name": "���Ծ���",
+  "name": "theft_alarm",
+  "perception_mode": "global",
+  "range": 0
+}

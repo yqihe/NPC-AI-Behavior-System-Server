@@ -1,0 +1,21 @@
+{
+  "template_ref": "ranger_base",
+  "fields": {
+    "aggression": "aggressive",
+    "attack_power": 22.0,
+    "defense": 3.0,
+    "loot_table": "loot_goblin",
+    "max_hp": 60,
+    "move_speed": 4.0,
+    "perception_range": 35.0
+  },
+  "behavior": {
+    "fsm_ref": "fsm_combat_basic",
+    "bt_refs": {
+      "attack": "bt/combat/attack",
+      "chase": "bt/combat/chase",
+      "idle": "bt/combat/idle",
+      "patrol": "bt/combat/patrol"
+    }
+  }
+}

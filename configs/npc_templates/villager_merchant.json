@@ -1,0 +1,19 @@
+{
+  "template_ref": "passive_npc",
+  "fields": {
+    "aggression": "passive",
+    "enable_social": true,
+    "group_id": "merchant_guild",
+    "max_hp": 100,
+    "move_speed": 2.0,
+    "perception_range": 10.0,
+    "social_role": "trader"
+  },
+  "behavior": {
+    "fsm_ref": "thief_fsm",
+    "bt_refs": {
+      "flee": "bt/thief/flee_sustain",
+      "steal": "bt/thief/steal_loop"
+    }
+  }
+}

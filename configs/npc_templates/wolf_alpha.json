@@ -1,0 +1,25 @@
+{
+  "template_ref": "warrior_base",
+  "fields": {
+    "aggression": "aggressive",
+    "attack_power": 45.0,
+    "defense": 25.0,
+    "enable_emotion": true,
+    "enable_memory": true,
+    "enable_personality": false,
+    "is_boss": true,
+    "loot_table": "loot_wolf_alpha",
+    "max_hp": 800,
+    "move_speed": 6.0,
+    "perception_range": 30.0
+  },
+  "behavior": {
+    "fsm_ref": "fsm_combat_basic",
+    "bt_refs": {
+      "attack": "bt/combat/attack",
+      "chase": "bt/combat/chase",
+      "idle": "bt/combat/idle",
+      "patrol": "bt/combat/patrol"
+    }
+  }
+}

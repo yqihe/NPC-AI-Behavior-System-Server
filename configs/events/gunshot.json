@@ -1,7 +1,8 @@
 {
-  "name": "gunshot",
   "default_severity": 90,
   "default_ttl": 10,
+  "display_name": "枪声",
+  "name": "gunshot",
   "perception_mode": "auditory",
   "range": 300
 }

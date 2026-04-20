@@ -1,0 +1,7 @@
+{
+  "type": "stub_action",
+  "params": {
+    "name": "idle_stand",
+    "result": "success"
+  }
+}

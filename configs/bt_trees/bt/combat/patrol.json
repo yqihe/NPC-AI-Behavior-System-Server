@@ -1,0 +1,19 @@
+{
+  "type": "sequence",
+  "children": [
+    {
+      "type": "set_bb_value",
+      "params": {
+        "key": "current_action",
+        "value": "patrol_move"
+      }
+    },
+    {
+      "type": "stub_action",
+      "params": {
+        "name": "patrol_waypoints",
+        "result": "success"
+      }
+    }
+  ]
+}

@@ -18,11 +18,7 @@
       "to": "Patrol",
       "from": "Idle",
       "priority": 1,
-      "condition": {
-        "op": "==",
-        "key": "last_event_type",
-        "value": ""
-      }
+      "condition": {}
     },
     {
       "to": "Chase",
@@ -38,7 +34,6 @@
           {
             "op": "\u003e",
             "key": "threat_expire_at",
-            "value": "",
             "ref_key": "current_time"
           }
         ]
@@ -58,7 +53,6 @@
           {
             "op": "\u003e",
             "key": "threat_expire_at",
-            "value": "",
             "ref_key": "current_time"
           }
         ]
@@ -88,7 +82,6 @@
           {
             "op": "\u003c=",
             "key": "threat_expire_at",
-            "value": "",
             "ref_key": "current_time"
           }
         ]
@@ -108,7 +101,6 @@
           {
             "op": "\u003c=",
             "key": "threat_expire_at",
-            "value": "",
             "ref_key": "current_time"
           }
         ]

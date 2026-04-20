@@ -27,9 +27,10 @@ func TestZeroCodeExtension_TheftAlarm(t *testing.T) {
 
 	// --- 2. Spawn guard_basic（绑 guard FSM，initial_state=Patrol，
 	//        Patrol→Alert 条件 last_event_type!=""，Alert→Defend 条件 threat>=60）---
-	// 注：villager_guard 绑的 fsm_combat_basic 有 seed bug（Idle→Patrol
-	// 条件 last_event_type=="" 因 BB 缺键永远不触发），会卡死 Idle；
-	// 此处按 Admin CC 建议改用 guard_basic + guard FSM 做跨 NPC 断言。
+	// 注：选 guard_basic 而非 villager_guard 是因为 guard FSM 的跨 NPC
+	// 分叉断言更直白（Alert/Defend vs thief 的 flee）；villager_guard 绑的
+	// fsm_combat_basic 经 Admin 侧 Finding-1 修复后也已可用（Idle→Patrol
+	// 无条件转换），该路径由 TestAdminFix_FSMCombatBasic 覆盖。
 	resp = sendAndRecv(t, conn, makeSpawnMsg("guard_1", "guard_basic", 0, 0))
 	if resp.Type != protocol.TypeResponse {
 		t.Fatalf("spawn guard: expected response, got %s", resp.Type)

@@ -6,6 +6,7 @@
 | [red-lines.md](standards/red-lines.md) | 通用禁止红线（安全、静默降级、过度设计、测试质量） | 编写或审查任何代码时 |
 | [dev-rules.md](standards/dev-rules.md) | 通用开发规则（文档同步、Git 规范、日志、经验沉淀） | 所有开发活动 |
 | [go-pitfalls.md](standards/go-pitfalls.md) | Go 语言陷阱与禁令（并发、数据结构、JSON/BSON、测试） | 写 Go 代码和 review 时 |
+| [acceptance-checklist.md](standards/acceptance-checklist.md) | 服务端达标验收清单（正确性/可观测性/性能/健壮性/配置/毕设专属） | 阶段性交付或答辩前 |
 
 ## architecture/ — 项目架构与约束
 | 文档 | 内容概括 | 何时查阅 |

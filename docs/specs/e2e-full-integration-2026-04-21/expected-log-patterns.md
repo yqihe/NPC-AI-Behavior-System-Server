@@ -76,7 +76,7 @@ Server 正则使用 `\S+` 泛化捕获，Admin verify.sh 对 ref_value 做精确
 
 ## 第二轮之一：dangling region
 
-**操作**：Admin 把 `e2e_village.spawn_table[0].template_ref` 改为 `missing_template_xxx`，`docker compose restart server`。
+**操作**：Admin 把 `e2e_village.spawn_table[0].template_ref` 改为 `missing_npc_xxx`（见 §故障注入共享 fixture），`docker compose restart server`。
 
 ### 必须出现
 

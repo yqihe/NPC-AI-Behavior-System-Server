@@ -8,13 +8,7 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
 
 ## 短期（答辩前）
 
-### 1. Unity 客户端联调
-
-- **状态**：进行中（Client 端独立仓库开发）
-- **内容**：WS 通信层 + NPC 可视化 + GM 面板 + AutoTestRunner
-- **服务端配合**：协议已定义（`docs/protocol.md`），预计无需改动
-
-### 2. 运营平台（Admin）
+### 1. 运营平台（Admin）
 
 - **状态**：已完成（配置 CRUD + API）
 - **独立服务**：`NPC-AI-Behavior-System-Admin/`，游戏服务端通过 HTTP API 拉取配置
@@ -36,19 +30,23 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
   - 更新流程：运营改配置 → 发停服公告 → 到点停服 → 重启服务 → 新配置生效
 - **Redis 使用**：运营平台独立服务，Redis 缓存 MongoDB 查询（多用户频繁读取配置列表），与游戏服务端无关
 
-### 3. 扩展轴步骤 5：NPC 间交互
+### 2. 论文数据采集
 
-- **状态**：待规划
-- **内容**：警察保护平民、NPC 间信息传递
-- **可能的改动**：决策中心扩展（当前只处理事件→NPC，需要支持 NPC→NPC 交互），可能需要新的 BB Key 和 BT 节点
-- **风险**：可能需要改 runtime 层代码，需要评估是否违反"加配置不改代码"原则
-
-### 4. 论文数据采集
-
-- **状态**：待执行
+- **状态**：待执行（答辩前最高优先级）
 - **内容**：运行 experiment 层的定性/定量测试，生成图 1-7 + 表 1 数据
 - **命令**：见 `docs/specs/experiment-layer/data-collection-guide.md`
 - **前置**：无，可以现在就跑
+
+### 3. P1–P5 阶梯压测
+
+- **状态**：待执行（T4/T5 对比曲线依赖此数据）
+- **内容**：N=100/500/1000 三档压测 + Hybrid vs PureFSM/PureBT 对比曲线
+- **前置**：脚本已在 [test/benchmark/](../test/benchmark/)，当前只有 4/20 单档基线
+
+### 4. 验收清单补漏
+
+- **C1**：核查 `go test -cover ./internal/core/...` 覆盖率 ≥ 70%
+- **C3**：提 PR 前跑 `go vet ./...` + `staticcheck ./...` 零告警
 
 ### 5. 答辩演示准备
 
@@ -128,6 +126,8 @@ Core / Runtime / Gateway / Experiment / Config 五层全部完成。扩展轴步
 
 | 排除项 | 理由 |
 |--------|------|
+| Unity 客户端联调（答辩前） | 协议已定义，服务端零改动；Client 仓独立推进，不阻塞答辩材料 |
+| 扩展轴 Step 5：NPC↔NPC 交互（答辩前） | 可能需改 runtime/decision 层，风险高于收益；答辩后再评估 |
 | 游戏服务端接入 Redis | 单节点内存足够，红线禁止无使用场景提前接入 |
 | 游戏服务端认证/鉴权 | 毕设不需要 |
 | 消息压缩 | JSON 明文便于调试，毕设规模下性能不是瓶颈 |

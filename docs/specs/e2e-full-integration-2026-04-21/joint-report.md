@@ -6,6 +6,8 @@
 
 **结论**：**三轮全绿**，实现与 spec 契约在 L2 层级对齐，暴露 1 处已知实现落差（记入 §暴露的 Issue）。
 
+> **归档更新（2026-04-21 同日）**：I1 已由 [PR #41](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/41) 对称落地（`fetchNpcTemplatesEndpoint` 解码 45016 details[] → `config.http.npc_templates.dangling` 结构化日志）。R2B "含已知落差" 标记仅保留历史采集语境，当前 main 上已不再有 `status 500` 信息丢失。`未来改进 §1` 同步标记完成。
+
 ---
 
 ## 三轮结果
@@ -55,7 +57,7 @@
 
 ## 暴露的 Issue
 
-### I1（中）generic fetchEndpoint 不解码业务错误 body
+### I1（中）generic fetchEndpoint 不解码业务错误 body — ✅ 已解决（PR #41）
 
 **现象**：`internal/config/http_source.go` 中通用 `fetchEndpoint`（event_types/fsm_configs/bt_trees/npc_templates 共用路径）在 HTTP 非 200 时仅返 `"status <code>"`，不读 body、不解 `code=45016` / `details[]`。联调 R2B 实际观察：45016 暴露给 Admin 的 `ref_value=missing_fsm_xxx / ref_type=fsm_ref` 全部丢失，Server 日志仅剩 `status 500`。
 
@@ -63,7 +65,7 @@
 
 **对称方案**：参照 [PR #37](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/37)（regions 47011 解码）扩展至 4 端点，新增 `config.http.<endpoint>.dangling` 结构化日志 + `config.http_error err` 内嵌 `code / count / details` 汇总。
 
-**排期**：**独立 PR**，本轮不阻塞。spec §2B.9 已为此预留锚点，完成后对账脚本直接启用。
+**落地（2026-04-21 同日）**：[PR #41](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/41) 为 npc_templates 端点新增 `fetchNpcTemplatesEndpoint`，500+45016 解码 details[]（复用 Admin `NPCExportDanglingRef` 类型，`npc_name` 字面承载 NPC 名，`ref_type ∈ {fsm_ref, bt_ref}`，`state` 仅 bt_ref 填充）后 fail-fast，对称 PR #37 regions 路径。event_types/fsm_configs/bt_trees 三端点当前仅 status 级落差，非本轮验收锚点。
 
 ### I2（低）spec 正则硬编码 fixture 值，与 Admin verify.sh 实际注入值轻微偏离
 
@@ -96,7 +98,7 @@
 
 ## 未来改进（独立 PR）
 
-1. **fetchEndpoint 45016 对称解码**（I1） — 4 端点业务错误 body 统一结构化输出，预计 ~150 LOC + 对应单元测试
+1. ~~**fetchEndpoint 45016 对称解码**（I1）~~ — ✅ 已在 [PR #41](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/41) 落地（npc_templates 端点对称 regions 路径）
 2. **spec md I2/I3 小修** — fixture 值参数化 + runbook 启动顺序对齐实现
 3. **L3 运行级 e2e**（FSM 状态转换 / BT 节点轨迹 / perception 事件分发）—— 本轮非目标，后续单独立规范
 
@@ -109,3 +111,4 @@
 - Admin 仓 `docs/specs/e2e-full-integration-2026-04-21/joint-report.md` — 独立追踪，结论一致
 - [PR #37](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/37) — regions 47011 fail-fast（已 merge）
 - [PR #40](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/40) — 本 spec 目录
+- [PR #41](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/41) — npc_templates 45016 对称 fail-fast（已 merge，闭环 I1）

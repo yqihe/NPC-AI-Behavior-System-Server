@@ -13,8 +13,8 @@ time=2026-04-21T12:34:56.789+08:00 level=INFO msg=events.loaded count=5
 | 层 | 条数 | 说明 |
 |----|------|------|
 | event_types | 5 | earthquake / explosion / fire / gunshot / shout |
-| FSM | 2 | fsm_combat_basic + fsm_passive |
-| BT | 3 | bt/combat/idle + bt/combat/patrol + bt/combat/attack |
+| FSM | 3 | fsm_combat_basic + fsm_passive + guard |
+| BT | 6 | bt/combat/{idle,patrol,chase,attack} + bt/passive/wander + bt/guard/patrol |
 | NPC 模板 | 5（其中 1 个 enabled=false） | e2e_bare / e2e_social / e2e_memo_emo / e2e_full / e2e_disabled |
 | region | 2 | e2e_village（引 e2e_bare × 2）+ e2e_empty（空 spawn_table） |
 
@@ -34,8 +34,8 @@ time=2026-04-21T12:34:56.789+08:00 level=INFO msg=events.loaded count=5
 |---|------|------|------|------|
 | 1.1 | 配置源标注 | `msg=config\.source type=http base_url=http://[^ ]+` | 1 行 | 精确 1 |
 | 1.2 | event_types 加载 | `msg=config\.http\.loaded endpoint=/api/configs/event_types count=(\d+)` | count=5 | 捕获组 == 5 |
-| 1.3 | fsm_configs 加载 | `msg=config\.http\.loaded endpoint=/api/configs/fsm_configs count=(\d+)` | count=2 | 捕获组 == 2 |
-| 1.4 | bt_trees 加载 | `msg=config\.http\.loaded endpoint=/api/configs/bt_trees count=(\d+)` | count=3 | 捕获组 == 3 |
+| 1.3 | fsm_configs 加载 | `msg=config\.http\.loaded endpoint=/api/configs/fsm_configs count=(\d+)` | count=3 | 捕获组 == 3 |
+| 1.4 | bt_trees 加载 | `msg=config\.http\.loaded endpoint=/api/configs/bt_trees count=(\d+)` | count=6 | 捕获组 == 6 |
 | 1.5 | npc_templates 加载 | `msg=config\.http\.loaded endpoint=/api/configs/npc_templates count=(\d+)` | count=4 | 捕获组 == 4 |
 | 1.6 | regions 加载 | `msg=config\.http\.loaded endpoint=/api/configs/regions count=(\d+)` | count=2 | 捕获组 == 2 |
 | 1.7 | events 注册数 | `msg=events\.loaded count=(\d+)` | count=5 | 捕获组 == 5 |

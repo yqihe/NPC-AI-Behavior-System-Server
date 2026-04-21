@@ -41,7 +41,7 @@ MONGO_PORT=27017
 
 ## 启动顺序
 
-1. Admin 侧先完成 seed（5 event_types / 2 FSM / 3 BT / 5 NPC 模板其中 1 个 `enabled=false` / 2 region），端点 curl 自检通过
+1. Admin 侧先完成 seed（5 event_types / 3 FSM / 6 BT / 5 NPC 模板其中 1 个 `enabled=false` / 2 region），端点 curl 自检通过
 2. Server 侧 `docker compose --env-file .env.e2e up --build -d`
 3. **等待 ≥ 1s** 让 scheduler 跑至少 10 个 tick，`metrics.RecordTick` 稳定
 4. Admin 侧对账脚本：curl `/metrics` + `docker compose logs server` 抓日志 → 正则匹配 → PASS/FAIL

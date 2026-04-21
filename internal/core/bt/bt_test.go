@@ -1,6 +1,7 @@
 package bt_test
 
 import (
+	"encoding/json"
 	"testing"
 
 	"github.com/yqihe/NPC-AI-Behavior-System-Server/internal/core/blackboard"
@@ -195,5 +196,74 @@ func TestNested_InverterInSelector(t *testing.T) {
 	}
 	if tree.Tick(newCtx()) != bt.Success {
 		t.Fatal("expected Success")
+	}
+}
+
+// --- stub_action ---
+
+func buildStubAction(t *testing.T, params string) bt.Node {
+	t.Helper()
+	reg := bt.DefaultRegistry()
+	f, err := reg.Get("stub_action")
+	if err != nil {
+		t.Fatalf("registry.Get(stub_action): %v", err)
+	}
+	node, err := f(json.RawMessage(params))
+	if err != nil {
+		t.Fatalf("stubActionFactory(%s): %v", params, err)
+	}
+	return node
+}
+
+func TestStubAction_DefaultSuccess(t *testing.T) {
+	node := buildStubAction(t, `{"name":"play_anim"}`)
+	if got := node.Tick(newCtx()); got != bt.Success {
+		t.Fatalf("expected Success on default result, got %v", got)
+	}
+}
+
+func TestStubAction_ExplicitResults(t *testing.T) {
+	cases := []struct {
+		result string
+		want   bt.Status
+	}{
+		{"success", bt.Success},
+		{"failure", bt.Failure},
+		{"running", bt.Running},
+	}
+	for _, c := range cases {
+		t.Run(c.result, func(t *testing.T) {
+			node := buildStubAction(t, `{"name":"x","result":"`+c.result+`"}`)
+			if got := node.Tick(newCtx()); got != c.want {
+				t.Fatalf("result=%s: expected %v, got %v", c.result, c.want, got)
+			}
+		})
+	}
+}
+
+func TestStubActionFactory_UnknownResult(t *testing.T) {
+	reg := bt.DefaultRegistry()
+	f, _ := reg.Get("stub_action")
+	_, err := f(json.RawMessage(`{"name":"x","result":"weird"}`))
+	if err == nil {
+		t.Fatal("expected error for unknown result")
+	}
+}
+
+func TestStubActionFactory_MissingName(t *testing.T) {
+	reg := bt.DefaultRegistry()
+	f, _ := reg.Get("stub_action")
+	_, err := f(json.RawMessage(`{"result":"success"}`))
+	if err == nil {
+		t.Fatal("expected error when name missing")
+	}
+}
+
+func TestStubActionFactory_InvalidJSON(t *testing.T) {
+	reg := bt.DefaultRegistry()
+	f, _ := reg.Get("stub_action")
+	_, err := f(json.RawMessage(`{bad`))
+	if err == nil {
+		t.Fatal("expected JSON parse error")
 	}
 }

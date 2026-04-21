@@ -57,12 +57,15 @@ MONGO_PORT=27017
 | # | msg | 关键 kv | 作用 |
 |---|-----|--------|------|
 | 1 | `config.loaded` | `addr=:9820 tick_rate_ms=100 ...` | 服务端配置文件已加载 |
-| 2 | `config.source` | `type=http base_url=<admin_url>` | **O4 生效源标注**，决定 Server 读哪边数据 |
-| 3 | `config.http.loaded` × 5 | `endpoint=/api/configs/<name> count=<n>` | 5 端点拉取成功，每端点一行 |
+| 2 | `config.http.loaded` × 5 | `endpoint=/api/configs/<name> count=<n>` | 5 端点拉取成功，每端点一行（event_types → fsm_configs → bt_trees → npc_templates → regions） |
+| 3 | `config.source` | `type=http base_url=<admin_url>` | **O4 生效源标注**，HTTPSource 构造完成后打出（**位置在 5 端点之后**） |
 | 4 | `events.loaded` | `count=<n>` | 事件类型最终注册数 |
-| 5 | `zones.loaded` | `count=<n>` | 区域加载完成（含空 spawn_table） |
-| 6 | `admin_spawn.done` | `spawned=<n> template_count=<n>` | ADMIN 模板路径 spawn 完成 |
-| 7 | `server.start` | `addr=:9820` | HTTP/WS 监听成功 |
+| 5 | `zone.spawned` × N | `zone=<id> npc_count=<n>` | 每个 region 的 zone spawn 详情 |
+| 6 | `zones.loaded` | `count=<n>` | 区域加载完成（含空 spawn_table） |
+| 7 | `admin_spawn.done` | `spawned=<n> template_count=<n>` | ADMIN 模板路径 spawn 完成 |
+| 8 | `server.start` | `addr=:9820` | HTTP/WS 监听成功 |
+
+> 对账用正则存在性 + 捕获组判定，不按行序卡 PASS/FAIL —— 上表供排障时快速定位启动卡点。
 
 ### 双路径 spawn 收敛（design §1.3 R15）
 

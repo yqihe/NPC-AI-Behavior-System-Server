@@ -24,6 +24,15 @@ time=2026-04-21T12:34:56.789+08:00 level=INFO msg=events.loaded count=5
 - Zone 路径 spawn = 2（e2e_village × 2 + e2e_empty × 0）
 - **npc_active_count 总和 = 6**，其中 e2e_bare 有 3 个实例（1 模板路径 + 2 zone 路径）
 
+**故障注入共享 fixture**（Admin `scripts/e2e/verify.sh` 硬编码，Server 正则不写死）：
+
+| 场景 | 字段 | Admin 注入值 |
+|------|------|-------------|
+| R2A dangling region | `e2e_village.spawn_table[0].template_ref` | `missing_npc_xxx` |
+| R2B dangling fsm_ref | `e2e_full.behavior.fsm_ref` | `missing_fsm_xxx` |
+
+Server 正则使用 `\S+` 泛化捕获，Admin verify.sh 对 ref_value 做精确断言。如 Admin 变更 fixture，更新此表即可，Server 正则无需改动。
+
 ---
 
 ## 第一轮：happy path + disable fan-out
@@ -74,7 +83,7 @@ time=2026-04-21T12:34:56.789+08:00 level=INFO msg=events.loaded count=5
 | # | 锚点 | 正则 | 期望 | 判定 |
 |---|------|------|------|------|
 | 2A.1 | 前 4 端点 loaded | 同 1.2–1.5（四行） | count 各项正常 | 逐行捕获组相等 |
-| 2A.2 | 悬空引用详情 | `msg=config\.http\.regions\.dangling region_id=e2e_village ref_type=\S+ ref_value=missing_template_xxx reason=` | ≥ 1 行 | 至少 1 |
+| 2A.2 | 悬空引用详情 | `msg=config\.http\.regions\.dangling region_id=e2e_village ref_type=\S+ ref_value=\S+ reason=\S+` | ≥ 1 行 | 至少 1（ref_value 精确值见 fixture 表） |
 | 2A.3 | 汇总错误行 | `msg=config\.http_error err=".*code=47011.*"` | 1 行 | 精确 1 |
 | 2A.4 | 容器重启循环 | `docker inspect --format='{{.RestartCount}}' <server-container>` | ≥ 2 | 数值比较（非日志） |
 

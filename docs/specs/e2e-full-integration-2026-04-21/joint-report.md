@@ -67,19 +67,23 @@
 
 **落地（2026-04-21 同日）**：[PR #41](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/41) 为 npc_templates 端点新增 `fetchNpcTemplatesEndpoint`，500+45016 解码 details[]（复用 Admin `NPCExportDanglingRef` 类型，`npc_name` 字面承载 NPC 名，`ref_type ∈ {fsm_ref, bt_ref}`，`state` 仅 bt_ref 填充）后 fail-fast，对称 PR #37 regions 路径。event_types/fsm_configs/bt_trees 三端点当前仅 status 级落差，非本轮验收锚点。
 
-### I2（低）spec 正则硬编码 fixture 值，与 Admin verify.sh 实际注入值轻微偏离
+### I2（低）spec 正则硬编码 fixture 值，与 Admin verify.sh 实际注入值轻微偏离 — ✅ 已解决
 
 **现象**：`expected-log-patterns.md` §2A.2 正则写死 `ref_value=missing_template_xxx`；Admin verify.sh 实际注入 `missing_npc_xxx`。对账 PASS 依赖 Admin 脚本本地口径，但 spec md 自述不一致。
 
 **解法**：spec md 参数化——`ref_value=\S+` 替代硬编码 fixture 值，或把 fixture 值作为 Admin/Server 双边共享的变量表单独抽出。**本 PR 内小修**。
 
-### I3（低）启动日志顺序与 runbook §观测锚点清单叙述偏离
+**落地**：正则早在 PR #40 已改为 `\S+`（expected-log-patterns.md §2A.2/§2B.2）；expected-log-patterns.md §故障注入共享 fixture 表集中托管注入值；runbook/patterns 的叙述性 `missing_template_xxx` 同步改为 `missing_npc_xxx`（PR #46）。
+
+### I3（低）启动日志顺序与 runbook §观测锚点清单叙述偏离 — ✅ 已解决
 
 **现象**：runbook 第 57-65 行按"config.loaded → config.source → config.http.loaded × 5 → events.loaded → ..." 叙述；实现里 `config.source` 出现在 5 端点 `config.http.loaded` **之后**（因为 HTTPSource 构造完后才打源标注）。
 
 **影响**：对账用正则存在性+捕获组判定，不按行序卡 PASS/FAIL，**不影响本轮结果**。但 runbook 叙述应对齐实现，避免误导未来读者。
 
 **解法**：runbook §"启动阶段顺序（happy path）" 表格 reorder，把 config.source 挪到第 7 位。**本 PR 内小修**。
+
+**落地**：runbook §"启动阶段顺序（happy path）" 表格已把 `config.http.loaded × 5` 放在 #2、`config.source` 放在 #3（附注"位置在 5 端点之后"），叙述与实现一致。PR #40 合入前已修正。
 
 ---
 
@@ -99,7 +103,7 @@
 ## 未来改进（独立 PR）
 
 1. ~~**fetchEndpoint 45016 对称解码**（I1）~~ — ✅ 已在 [PR #41](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/41) 落地（npc_templates 端点对称 regions 路径）
-2. **spec md I2/I3 小修** — fixture 值参数化 + runbook 启动顺序对齐实现
+2. ~~**spec md I2/I3 小修**~~ — ✅ I3 在 PR #40 合入前已 reorder；I2 叙述性 fixture 值统一于本次归档（详见各 Issue §落地）
 3. **L3 运行级 e2e**（FSM 状态转换 / BT 节点轨迹 / perception 事件分发）—— 本轮非目标，后续单独立规范
 
 ---

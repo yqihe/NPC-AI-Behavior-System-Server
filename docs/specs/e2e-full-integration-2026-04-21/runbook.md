@@ -94,12 +94,12 @@ Server 启动会**同时触发两条 spawn 路径**，对账必须叠加：
 
 ### 第二轮之一：dangling region
 
-**操作**：Admin 侧把 `e2e_village.spawn_table[0].template_ref` 从 `e2e_bare` 改成 `missing_template_xxx`；Server 不变，仅 `docker compose restart server`。
+**操作**：Admin 侧把 `e2e_village.spawn_table[0].template_ref` 从 `e2e_bare` 改成 `missing_npc_xxx`（Admin `scripts/e2e/verify.sh` 共享 fixture，见 expected-log-patterns.md §故障注入共享 fixture）；Server 不变，仅 `docker compose restart server`。
 
 **Server 端预期**：
 - 前 4 端点（event_types/fsm_configs/bt_trees/npc_templates）正常 `config.http.loaded`
 - regions 端点拉取时 HTTPSource `fetchRegionsEndpoint` 检测到 HTTP 500 + code=47011
-- 按 `details[]` 逐条打：`config.http.regions.dangling region_id=e2e_village ref_type=<str> ref_value=missing_template_xxx reason=<str>`
+- 按 `details[]` 逐条打：`config.http.regions.dangling region_id=e2e_village ref_type=<str> ref_value=missing_npc_xxx reason=<str>`
   > 注意：Admin 侧 `details[].npc_name` 字段在 regions 语境下实际承载 region_id（memory: Admin regions 端点契约）—— Server 端已适配，日志输出的 key 叫 `region_id`
 - `config.http_error err="config: regions export dangling refs (code=47011, count=<n>): <msg>"`
 - `main.go:64` `os.Exit(1)` → 容器重启循环（`docker inspect --format='{{.RestartCount}}' <container>` ≥ 2）

@@ -1,6 +1,7 @@
 package decision
 
 import (
+	"context"
 	"log/slog"
 	"math"
 
@@ -73,19 +74,21 @@ func (c *Center) Evaluate(bb *blackboard.Blackboard, npcPos event.Vec3, input De
 	}
 	blackboard.Set(bb, blackboard.KeyDecisionWinner, winner)
 
-	// 决策日志
-	maxEventID := ""
-	if maxEvent != nil {
-		maxEventID = maxEvent.ID
+	// 决策日志：Enabled 门控避免 info 级下 variadic args 切片逃逸（每 Tick 调用）
+	if slog.Default().Enabled(context.Background(), slog.LevelDebug) {
+		maxEventID := ""
+		if maxEvent != nil {
+			maxEventID = maxEvent.ID
+		}
+		slog.Debug("decision.evaluated",
+			"npc_id", input.NPCID,
+			"threat_score", threatScore,
+			"need_score", needScore,
+			"emotion_score", emotionScore,
+			"winner", winner,
+			"threat_source", maxEventID,
+		)
 	}
-	slog.Debug("decision.evaluated",
-		"npc_id", input.NPCID,
-		"threat_score", threatScore,
-		"need_score", needScore,
-		"emotion_score", emotionScore,
-		"winner", winner,
-		"threat_source", maxEventID,
-	)
 
 	// 6. 威胁维度 BB 写入（保持 v2 兼容，不受仲裁结果影响）
 	if maxEvent != nil {

@@ -55,7 +55,6 @@ func NewHTTPSource(ctx context.Context, baseURL string) (*HTTPSource, error) {
 		{"/api/configs/event_types", s.eventTypes, false},
 		{"/api/configs/fsm_configs", s.fsmConfigs, false},
 		{"/api/configs/bt_trees", s.btTrees, false},
-		{"/api/configs/npc_templates", s.npcTemplates, false},
 	}
 
 	client := &http.Client{}
@@ -71,6 +70,14 @@ func NewHTTPSource(ctx context.Context, baseURL string) (*HTTPSource, error) {
 		}
 		slog.Info("config.http.loaded", "endpoint", ep.path, "count", len(ep.target))
 	}
+
+	// npc_templates 端点单独处理：500+业务码 45016 需提取 details[] 悬空 FSM/BT 引用 fail-fast。
+	// Admin 契约：details[] 复用 NPCExportDanglingRef，npc_name 字面承载 NPC 名，ref_type ∈ {fsm_ref, bt_ref}。
+	npcTemplatesPath := "/api/configs/npc_templates"
+	if err := fetchNpcTemplatesEndpoint(ctx, client, baseURL+npcTemplatesPath, s.npcTemplates); err != nil {
+		return nil, err
+	}
+	slog.Info("config.http.loaded", "endpoint", npcTemplatesPath, "count", len(s.npcTemplates))
 
 	// regions 端点单独处理：空 items[] 合法（与 JSONSource 目录不存在行为一致），
 	// 且 500+业务码 47011 需提取 details[] 悬空引用 fail-fast（见 memory: Admin regions 端点契约）
@@ -151,6 +158,88 @@ func fetchRegionsEndpoint(ctx context.Context, client *http.Client, url string, 
 			continue
 		}
 		target[item.Name] = item.Config
+	}
+	return nil
+}
+
+// npcTemplatesErrorBody npc_templates 端点业务错误响应（500 + code 45016）
+type npcTemplatesErrorBody struct {
+	Code    int                    `json:"code"`
+	Message string                 `json:"message"`
+	Details []npcTemplatesDangling `json:"details"`
+}
+
+// npcTemplatesDangling npc_templates 端点 details[] 条目。
+// Admin 侧复用 NPCExportDanglingRef：npc_name 字面是 NPC 名（非 template_name），
+// ref_type ∈ {fsm_ref, bt_ref}；state 仅 bt_ref 时填充。
+type npcTemplatesDangling struct {
+	NpcName  string `json:"npc_name"`
+	RefType  string `json:"ref_type"`
+	RefValue string `json:"ref_value"`
+	Reason   string `json:"reason"`
+	State    string `json:"state,omitempty"`
+}
+
+// fetchNpcTemplatesEndpoint npc_templates 专用拉取：500+45016 解码悬空 details[] 后 fail-fast。
+// 对称 fetchRegionsEndpoint 的 47011 路径（见 PR #37）。
+func fetchNpcTemplatesEndpoint(ctx context.Context, client *http.Client, url string, target map[string][]byte) error {
+	reqCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(reqCtx, http.MethodGet, url, nil)
+	if err != nil {
+		return fmt.Errorf("config: http create request %s: %w", url, err)
+	}
+
+	resp, err := client.Do(req)
+	if err != nil {
+		return fmt.Errorf("config: http request %s: %w", url, err)
+	}
+	defer resp.Body.Close()
+
+	body, err := io.ReadAll(resp.Body)
+	if err != nil {
+		return fmt.Errorf("config: http read %s: %w", url, err)
+	}
+
+	if resp.StatusCode == http.StatusInternalServerError {
+		var errBody npcTemplatesErrorBody
+		if jerr := json.Unmarshal(body, &errBody); jerr == nil && errBody.Code == 45016 {
+			for _, d := range errBody.Details {
+				attrs := []any{
+					"npc_name", d.NpcName,
+					"ref_type", d.RefType,
+					"ref_value", d.RefValue,
+					"reason", d.Reason,
+				}
+				if d.State != "" {
+					attrs = append(attrs, "state", d.State)
+				}
+				slog.Error("config.http.npc_templates.dangling", attrs...)
+			}
+			return fmt.Errorf("config: npc_templates export dangling refs (code=45016, count=%d): %s",
+				len(errBody.Details), errBody.Message)
+		}
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("config: http request %s: status %d body=%s", url, resp.StatusCode, string(body))
+	}
+
+	var response httpConfigResponse
+	if err := json.Unmarshal(body, &response); err != nil {
+		return fmt.Errorf("config: http parse %s: %w", url, err)
+	}
+
+	for _, item := range response.Items {
+		if item.Name == "" {
+			continue
+		}
+		target[item.Name] = item.Config
+	}
+
+	if len(target) == 0 {
+		return fmt.Errorf("config: http endpoint %s returned empty items", url)
 	}
 	return nil
 }

@@ -107,31 +107,21 @@ Server 正则使用 `\S+` 泛化捕获，Admin verify.sh 对 ref_value 做精确
 | # | 锚点 | 正则 | 期望 | 判定 |
 |---|------|------|------|------|
 | 2B.1 | 前 3 端点 loaded | 同 1.2–1.4（三行） | count 各项正常 | 逐行捕获组相等 |
-| 2B.2 | 汇总错误行 | `msg=config\.http_error err=".*api/configs/npc_templates: status 500.*"` | 1 行 | 精确 1 |
-| 2B.3 | 容器重启循环 | `docker inspect --format='{{.RestartCount}}' <server-container>` | ≥ 2 | 数值比较（非日志） |
+| 2B.2 | 悬空引用详情 | `msg=config\.http\.npc_templates\.dangling npc_name=\S+ ref_type=\S+ ref_value=\S+ reason=\S+` | ≥ 1 行 | 至少 1（R2B fixture 产出 `npc_name=e2e_full ref_type=fsm_ref ref_value=missing_fsm_xxx`） |
+| 2B.3 | 汇总错误行 | `msg=config\.http_error err=".*code=45016.*"` | 1 行 | 精确 1 |
+| 2B.4 | 容器重启循环 | `docker inspect --format='{{.RestartCount}}' <server-container>` | ≥ 2 | 数值比较（非日志） |
 
 ### 不得出现
 
 | # | 锚点 | 正则 | 期望 |
 |---|------|------|------|
-| 2B.4 | npc_templates loaded 行 | `msg=config\.http\.loaded endpoint=/api/configs/npc_templates` | 0 行 |
-| 2B.5 | regions loaded 行 | `msg=config\.http\.loaded endpoint=/api/configs/regions` | 0 行 |
-| 2B.6 | zones.loaded | `msg=zones\.loaded` | 0 行 |
-| 2B.7 | admin_spawn.done | `msg=admin_spawn\.done` | 0 行 |
-| 2B.8 | server.start | `msg=server\.start` | 0 行 |
-| 2B.9 | 未来增强锚点 | `msg=config\.http\.npc_templates\.dangling` | 0 行 | **本轮不做**，对账脚本预留 |
+| 2B.5 | npc_templates loaded 行 | `msg=config\.http\.loaded endpoint=/api/configs/npc_templates` | 0 行 |
+| 2B.6 | regions loaded 行 | `msg=config\.http\.loaded endpoint=/api/configs/regions` | 0 行 |
+| 2B.7 | zones.loaded | `msg=zones\.loaded` | 0 行 |
+| 2B.8 | admin_spawn.done | `msg=admin_spawn\.done` | 0 行 |
+| 2B.9 | server.start | `msg=server\.start` | 0 行 |
 
----
-
-## 已知实现落差（与第二轮之二相关）
-
-Server 当前对 `event_types / fsm_configs / bt_trees / npc_templates` 四个通用端点**不解码 45016 业务错误 body**，日志只有 `status 500`，**看不到** 哪个模板哪个字段引用了 disabled FSM。
-
-后续以独立 PR 对称 [PR #37](https://github.com/yqihe/NPC-AI-Behavior-System-Server/pull/37)（regions 端点 47011 增强）补齐：
-- 新增 `config.http.<endpoint>.dangling` 日志（与 `config.http.regions.dangling` 对称）
-- `config.http_error err` 内嵌 `code=45016 count=<n>` 汇总
-
-对账脚本为 2B.9 预留锚点，以便未来增强后直接启用。
+> **注**：`ref_type=bt_ref` 时 details 会多带一个 `state=<str>` 字段（Admin 契约：仅 BT 状态绑定悬空时填充）。2B.2 正则不断言 state 存在，以兼容 fsm_ref（无 state）与 bt_ref（有 state）两种产出。
 
 ---
 

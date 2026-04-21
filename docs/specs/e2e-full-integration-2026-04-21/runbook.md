@@ -84,6 +84,7 @@ Server 启动会**同时触发两条 spawn 路径**，对账必须叠加：
 |-----|------|
 | `config.http_error` | HTTPSource 拉取失败（任一 mandatory 端点） → `os.Exit(1)` |
 | `config.http.regions.dangling` | regions 端点 500 + 业务码 47011 的 details 解码（见 PR #37） |
+| `config.http.npc_templates.dangling` | npc_templates 端点 500 + 业务码 45016 的 details 解码（悬空 fsm_ref / bt_ref） |
 | `zones.spawn_error` | 某 region spawn 过程报错 |
 | `admin_spawn.parse_error` | 模板 JSON 解析失败 |
 | `admin_spawn.instance_error` | 模板实例化失败（BT/组件/FSM 绑定错） |
@@ -110,13 +111,14 @@ Server 启动会**同时触发两条 spawn 路径**，对账必须叠加：
 
 **Server 端预期**：
 - `event_types` / `fsm_configs` / `bt_trees` 三端点正常 loaded
-- `npc_templates` 端点拉取：HTTP 500（Admin 侧返 code=45016）
-- **当前实现落差**：Server 通用 `fetchEndpoint`（`http_source.go:159-200`）在 StatusCode != 200 时只返 `config: http request <url>: status <code>`，**不解码 details**
-- 日志仅出现：`config.http_error err="config: http request http://.../api/configs/npc_templates: status 500"`
-- `os.Exit(1)` → 容器重启循环
-- **看不到** 45016 业务码、**看不到** 哪个模板哪个字段引用了 disabled FSM
+- `npc_templates` 端点拉取：HTTP 500（Admin 侧返 code=45016）→ `fetchNpcTemplatesEndpoint` 检测到业务码 45016
+- 按 `details[]` 逐条打：`config.http.npc_templates.dangling npc_name=<npc> ref_type=<fsm_ref|bt_ref> ref_value=<missing_name> reason=<str>`（`ref_type=bt_ref` 时额外带 `state=<str>`）
+  > Admin 契约：details[] 字段名与 regions 端点共享 struct，但 `npc_name` 在此端点下**字面承载 NPC 名**（不像 regions 那样遗留），无需重命名
+- `config.http_error err="config: npc_templates export dangling refs (code=45016, count=<n>): <msg>"`
+- `main.go:64` `os.Exit(1)` → 容器重启循环（`docker inspect --format='{{.RestartCount}}' <container>` ≥ 2）
+- **不会出现**：`config.http.loaded endpoint=/api/configs/npc_templates`、`config.http.loaded endpoint=/api/configs/regions`、`zones.loaded`、`admin_spawn.done`、`server.start`（启动未走到后续阶段）
 
-> **后续改进（挪到独立 PR）**：对 4 个通用端点统一解码业务错误 body，对称 PR #37，新增 `config.http.<endpoint>.dangling` 日志 + 精确 fail-fast 信息。本轮 e2e 不做。
+> **其他 3 端点（event_types / fsm_configs / bt_trees）的 5xx**：Admin 契约确认为叶子导出，无跨模块 ref 校验，500 永远是通用 `ErrInternal=50000`，无 details 可解。Server 侧这 3 端点继续走通用 `fetchEndpoint`，日志打 `status 500 body=<raw>`，不引入 45016 路径（避免误匹配）。
 
 ## 产出物
 

@@ -330,6 +330,81 @@ func TestHTTPSource_Regions_Dangling(t *testing.T) {
 	}
 }
 
+// TestHTTPSource_NpcTemplates_Dangling 500 + 业务码 45016：提取 details[] 悬空 FSM/BT 引用 fail-fast。
+// 对称 TestHTTPSource_Regions_Dangling（PR #37），覆盖 fsm_ref 和 bt_ref（后者带 state）两种 ref_type。
+func TestHTTPSource_NpcTemplates_Dangling(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/configs/event_types", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"items":[{"name":"explosion","config":{"name":"explosion","default_severity":80,"default_ttl":15.0,"perception_mode":"auditory","range":500.0}}]}`)
+	})
+	mux.HandleFunc("/api/configs/fsm_configs", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"items":[{"name":"civilian","config":{"initial_state":"Idle","states":[{"name":"Idle"}],"transitions":[]}}]}`)
+	})
+	mux.HandleFunc("/api/configs/bt_trees", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"items":[{"name":"civilian/idle","config":{"type":"stub_action","params":{"name":"idle","result":"success"}}}]}`)
+	})
+	mux.HandleFunc("/api/configs/npc_templates", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{
+			"code": 45016,
+			"message": "NPC 导出失败：存在悬空的状态机/行为树引用，请按 details 修复",
+			"details": [
+				{"npc_name":"e2e_full","ref_type":"fsm_ref","ref_value":"missing_fsm_xxx","reason":"missing_or_disabled"},
+				{"npc_name":"e2e_full","ref_type":"bt_ref","ref_value":"missing_bt_xxx","reason":"missing_or_disabled","state":"Idle"}
+			]
+		}`)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	ctx := context.Background()
+	_, err := config.NewHTTPSource(ctx, srv.URL)
+	if err == nil {
+		t.Fatal("expected fail-fast on code=45016")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "45016") || !strings.Contains(msg, "dangling") {
+		t.Errorf("expected err to mention 45016 and dangling, got %q", msg)
+	}
+	if !strings.Contains(msg, "count=2") {
+		t.Errorf("expected err to embed count=2, got %q", msg)
+	}
+}
+
+// TestHTTPSource_NpcTemplates_GenericNon200 500 无业务码（50000 通用错误）：
+// 回退 status 500 + body 打印，不 panic、不误解 45016 路径。
+func TestHTTPSource_NpcTemplates_GenericNon200(t *testing.T) {
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/configs/event_types", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"items":[{"name":"explosion","config":{"name":"explosion","default_severity":80,"default_ttl":15.0,"perception_mode":"auditory","range":500.0}}]}`)
+	})
+	mux.HandleFunc("/api/configs/fsm_configs", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"items":[{"name":"civilian","config":{"initial_state":"Idle","states":[{"name":"Idle"}],"transitions":[]}}]}`)
+	})
+	mux.HandleFunc("/api/configs/bt_trees", func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprint(w, `{"items":[{"name":"civilian/idle","config":{"type":"stub_action","params":{"name":"idle","result":"success"}}}]}`)
+	})
+	mux.HandleFunc("/api/configs/npc_templates", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusInternalServerError)
+		fmt.Fprint(w, `{"code":50000,"message":"导出失败，请查看服务端日志"}`)
+	})
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	ctx := context.Background()
+	_, err := config.NewHTTPSource(ctx, srv.URL)
+	if err == nil {
+		t.Fatal("expected error for generic 500")
+	}
+	msg := err.Error()
+	if !strings.Contains(msg, "status 500") {
+		t.Errorf("expected err to mention status 500, got %q", msg)
+	}
+	if strings.Contains(msg, "45016") {
+		t.Errorf("expected err NOT to mention 45016 (generic 500), got %q", msg)
+	}
+}
+
 func TestHTTPSource_Timeout(t *testing.T) {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {

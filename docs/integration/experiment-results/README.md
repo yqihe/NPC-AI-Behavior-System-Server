@@ -141,6 +141,8 @@ Round 3:
 
 ## 图 2 / 图 5：吞吐量 + 内存矩阵（48 cells）
 
+> ⚠️ **2026-04-25 审计**：本节为 2026-04-20 -count=1 单轮重跑的归档（实际 `b.N` 由 Go 框架自适应，每子基准只跑 1 次），**不是 04-03 首采那次 -count=3 的原始日志**——后者的 .log 已永久丢失。最新可信 1000/5000 NPC × 100 行为档复测见 [docs/experiment-results.md §"2026-04-25 §图 2 数据完整性审计 + 复测"](../../experiment-results.md#2026-04-25-图-2-数据完整性审计--复测)。
+
 完整 `go test -bench -benchmem` 输出：
 
 ```
@@ -261,3 +263,55 @@ go test -tags experiment -bench=BenchmarkScale -benchmem \
 - Windows 下 `-race` 因本机 cgo 环境缺失跳过（影响 data race 检测，不影响性能数据正确性）
 - 3 轮 TickLatency / EventResponseTime 无整轮剔除，数据一致性 >95%
 - Benchmark 迭代次数由 Go 框架自动控制，数据可靠性最高
+
+---
+
+## 2026-04-25 §图 2 复测 + 稳定性验证（§1.8 / §6.4.5 ground truth）
+
+为补救 §图 2 表数据原始日志丢失（详见 [docs/experiment-results.md §"2026-04-25 §图 2 数据完整性审计"](../../experiment-results.md#2026-04-25-图-2-数据完整性审计--复测)），重新采集论文 §1.8 / §6.4.5 主基线数据。归档两份原始日志（已 `git add -f` 入库）：
+
+- [fig2-recheck-2026-04-25-count5.log](fig2-recheck-2026-04-25-count5.log) — 1000/5000 NPC × 100B，三模式 -count=5 -benchtime=3s（自适应 b.N）
+- [fig2-stability-2026-04-25-count10-fixed.log](fig2-stability-2026-04-25-count10-fixed.log) — 1000 NPC × 100B，三模式 -count=10 -benchtime=10000x（**禁用 b.N 自适应**）
+
+### -count=5 关键摘要（自适应 b.N）
+
+```
+BenchmarkScale_Hybrid/100B_1000N    5 轮:  1013350, 1026423, 1042079, 1020028, 1031160 → mean 1,026,608 ns/op (CV 1.07%)
+BenchmarkScale_Hybrid/100B_5000N    5 轮:  8477192, 8356843, 8393513, 8247458, 8367308 → mean 8,368,463 ns/op (CV 0.97%)
+BenchmarkScale_PureFSM/100B_1000N   5 轮:   929336,  930303,  913952,  935707,  925938 → mean   927,047 ns/op (CV 0.88%)
+BenchmarkScale_PureFSM/100B_5000N   5 轮:  5832180, 6035584, 5810363, 5983306, 5769933 → mean 5,886,273 ns/op (CV 1.91%)
+BenchmarkScale_PureBT/100B_1000N    5 轮:   753311,  739687,  740438,  731971,  694565 → mean   731,994 ns/op (CV 3.04%)
+BenchmarkScale_PureBT/100B_5000N    5 轮:  9279916, 9333559, 9478015, 9372764, 9285614 → mean 9,349,974 ns/op (CV 0.84%)
+```
+
+### -count=10 fixed b.N=10000 关键摘要
+
+```
+BenchmarkScale_Hybrid/100B_1000N   10 轮:  1032670, 1023115, 1033076, 1026360, 1031220, 1019950, 1031381, 1029010, 1024631, 1024364 → mean 1,027,578 ns/op (median 1,027,685, σ 4,528, CV 0.44%)
+BenchmarkScale_PureFSM/100B_1000N  10 轮:   931083,  932673,  939424,  927853,  960569,  939717,  950730,  928408,  937001,  924387 → mean   937,184 ns/op (median 934,837, σ 11,191, CV 1.19%)
+BenchmarkScale_PureBT/100B_1000N   10 轮:   728187,  726348,  744157,  749223,  720270,  715746,  738937,  735169,  721412,  732725 → mean   731,217 ns/op (median 730,456, σ 10,839, CV 1.48%)
+```
+
+### 跨实验一致性
+
+-count=5 自适应 b.N 与 -count=10 fixed b.N=10000 两次独立实验，三模式均值偏差均 ≤ 1.1% —— b.N 自适应不构成测量干扰。1000 档极稳定（三模式 CV 均 < 1.5%，远低于 10% 阈值）。
+
+### 复现命令
+
+```bash
+# -count=5 自适应（约 3 分钟）
+go test -tags experiment -run=^$ \
+    -bench='BenchmarkScale_(Hybrid|PureFSM|PureBT)$/100B_(1000|5000)N' \
+    -count=5 -benchtime=3s ./internal/experiment/
+
+# -count=10 fixed b.N（约 5 分钟，禁用自适应）
+go test -tags experiment -run=^$ \
+    -bench='BenchmarkScale_(Hybrid|PureFSM|PureBT)$/100B_1000N$' \
+    -count=10 -benchtime=10000x ./internal/experiment/
+```
+
+### 采集环境
+
+- Windows 11, 12th Gen Intel Core i7-12700H, Go 1.21（同 §图 1 / §图 6 T4 复核）
+- 跑期间无 docker / 其他 benchmark / 编译任务并行
+- 引擎 commit：a9e189c（PR #43 T4 复核合入后）

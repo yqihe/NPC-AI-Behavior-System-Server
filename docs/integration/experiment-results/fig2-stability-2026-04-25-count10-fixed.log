@@ -1,0 +1,36 @@
+goos: windows
+goarch: amd64
+pkg: github.com/yqihe/NPC-AI-Behavior-System-Server/internal/experiment
+cpu: 12th Gen Intel(R) Core(TM) i7-12700H
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1032670 ns/op	  320063 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1023115 ns/op	  320061 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1033076 ns/op	  320062 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1026360 ns/op	  320061 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1031220 ns/op	  320061 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1019950 ns/op	  320061 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1031381 ns/op	  320062 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1029010 ns/op	  320061 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1024631 ns/op	  320061 B/op	   13999 allocs/op
+BenchmarkScale_Hybrid/100B_1000N-20         	   10000	   1024364 ns/op	  320061 B/op	   13999 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    931083 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    932673 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    939424 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    927853 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    960569 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    939717 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    950730 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    928408 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    937001 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureFSM/100B_1000N-20        	   10000	    924387 ns/op	  574918 B/op	   15985 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    728187 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    726348 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    744157 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    749223 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    720270 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    715746 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    738937 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    735169 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    721412 ns/op	   63997 B/op	    4999 allocs/op
+BenchmarkScale_PureBT/100B_1000N-20         	   10000	    732725 ns/op	   63997 B/op	    4999 allocs/op
+PASS
+ok  	github.com/yqihe/NPC-AI-Behavior-System-Server/internal/experiment	289.482s

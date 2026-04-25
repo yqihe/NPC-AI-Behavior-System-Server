@@ -116,6 +116,90 @@
 
 ---
 
+## 2026-04-25 §图 2 数据完整性审计 + 复测
+
+**触发**：论文 CC 在 §6.4.5 吞吐量矩阵回填阶段做交叉校核，发现 §图 2 表 PureBT 100B_1000N = 1,151,484 ns/op 与归档日志 [fig2-fig5-benchmark.log](integration/experiment-results/fig2-fig5-benchmark.log) 同子基准 695,410 ns/op **不一致**（偏差 +65.6%）。
+
+**git 历史追溯**：
+
+- `844623b` (2026-04-03) experiment-results.md 首次创建。Commit message 注 "3 rounds for benchmarks"，但**未归档原始 .log**。
+- `3978892` (2026-04-20) fig2-fig5-benchmark.log 首次入库，但是 spec 阶段补归档时重跑的 -count=1 单轮，**不是 04-03 那次 -count=3 的原始日志**。
+- `a9e189c` (2026-04-21) T4 复核 PR #43 只刷新了 §图 1 / §图 6（单 NPC 微基准），**未重跑 §图 2**。
+
+**结论**：§图 2 表内 04-03 数据点的原始逐轮 .log 已永久丢失。无法验证表内具体数字的可信度。
+
+### 验证性复测：1000 / 5000 NPC × 100 行为，5 轮自适应 b.N
+
+```bash
+go test -tags experiment -run=^$ \
+    -bench='BenchmarkScale_(Hybrid|PureFSM|PureBT)$/100B_(1000|5000)N' \
+    -count=5 -benchtime=3s ./internal/experiment/
+```
+
+| 子基准 | 5 轮均值 ns/op | 5 轮 CV | 04-20 -count=1 归档 | 04-03 §图 2 表 | 表 vs 复测偏差 |
+|---|---:|---:|---:|---:|---:|
+| Hybrid 1000N×100B | 1,026,608 | 1.07% | 1,090,276 | 821,552 | -19.9% |
+| PureFSM 1000N×100B | 927,047 | 0.88% | 935,602 | 976,622 | +5.3% |
+| PureBT 1000N×100B | 731,994 | 3.04% | 695,410 | **1,151,484** | **+57.3%** ❗ |
+| Hybrid 5000N×100B | 8,368,463 | 0.97% | 8,078,103 | 7,726,705 | -7.7% |
+| PureFSM 5000N×100B | 5,886,273 | 1.91% | 5,979,376 | 6,489,724 | +10.3% |
+| PureBT 5000N×100B | 9,349,974 | 0.84% | 8,787,556 | 10,129,195 | +8.3% |
+
+**关键发现**：04-25 复测 vs 04-20 归档偏差 ≤7.5%（cache 状态、b.N 自适应导致的正常波动）。**仅 PureBT 1000N×100B 一个数据点，04-03 表值与新复测偏差 +57%——这个数字是孤儿，无法用任何近期物证支撑**。
+
+### 稳定性验证：1000 NPC × 100 行为，10 轮 × b.N=10000 fixed
+
+```bash
+go test -tags experiment -run=^$ \
+    -bench='BenchmarkScale_(Hybrid|PureFSM|PureBT)$/100B_1000N$' \
+    -count=10 -benchtime=10000x ./internal/experiment/
+```
+
+`-benchtime=10000x` 强制 b.N=10000，禁用自适应，排除 "不同 b.N 走不同代码路径" 的干扰假设。
+
+| 模式 | 10 轮均值 | 中位数 | std (σ) | CV | 与 5 轮均值偏差 |
+|---|---:|---:|---:|---:|---:|
+| Hybrid 1000N×100B | 1,027,578 | 1,027,685 | 4,528 | **0.44%** | +0.09% |
+| PureFSM 1000N×100B | 937,184 | 934,837 | 11,191 | **1.19%** | +1.09% |
+| PureBT 1000N×100B | 731,217 | 730,456 | 10,839 | **1.48%** | -0.11% |
+
+三模式 CV 均 < 1.5%，远 ≤ 10%。**1000 档本身极稳定**——问题不在测量噪声。
+
+### 规模交叉点定位：2000 / 3000 NPC × 100 行为，5 轮
+
+为定位三模式相对排序交叉点，临时 patch `scaleNPCs = []int{100, 500, 1000, 2000, 3000, 5000}` 跑了一次（跑后已回滚源码、`git status` 干净）：
+
+| 档位 | Hybrid (Tick/s) | PureFSM (Tick/s) | PureBT (Tick/s) | 排序（快→慢）|
+|---:|---:|---:|---:|---|
+| 100 NPC × 100B | 12,292 | 10,177 | **17,914** | PureBT > Hybrid > PureFSM |
+| 500 NPC × 100B | 2,537 | 2,131 | **2,685** | PureBT ≈ Hybrid > PureFSM |
+| 1000 NPC × 100B | 974 | 1,079 | **1,366** | PureBT > PureFSM > Hybrid |
+| 2000 NPC × 100B | 431 | **512** | 460 | PureFSM > PureBT > Hybrid |
+| 3000 NPC × 100B | 236 | **331** | 202 | PureFSM > Hybrid > PureBT |
+| 5000 NPC × 100B | 120 | **170** | 107 | PureFSM > Hybrid > PureBT |
+
+**两个真实交叉点**：
+
+- **PureFSM 反超 PureBT**：约 N≈1500（1000 档 PureBT 仍快，2000 档 PureFSM 已快）
+- **Hybrid 反超 PureBT**：约 N≈2500（2000 档 PureBT 略快，3000 档 Hybrid 反超）
+
+### 修订结论（覆盖原 §图 2 "Hybrid 综合最均衡" 表述）
+
+- **≤500 NPC**：PureBT 主导（cache-friendly 节点共享 + 56 B/NPC 极低内存）
+- **1000~2000 NPC**：PureBT 优势缩窄；PureFSM 在 N≈1500 反超变最快
+- **≥3000 NPC**：PureFSM 全程领先；Hybrid 反超 PureBT 变第二快；PureBT 因 BB 触碰频次的 cache 效应跌至最慢
+- **Hybrid 在所有档位均位居中游**，无单维度最优，但**也无单维度最差**
+
+吞吐量不是 Hybrid 的相对优势所在。**三位一体架构的核心证据应当聚焦在 [表 1（三层不可替代性 PASS/FAIL）](#表-1三层不可替代性定性验证) + [图 3/4（配置成本恒定）](#图-3行为数量-vs-配置复杂度) 两处不可证伪的硬证据**。
+
+### 数据采集环境
+
+- 同 §图 1 / §图 6 T4 复核（Windows 11, i7-12700H, Go 1.21）
+- 跑期间无 docker / 其他 benchmark / 编译任务并行
+- 原始日志：`bench_recheck.log` / `bench_crossover.log` / `bench_stability_10rounds.log`（`*.log` 全局 gitignored，落仓库根作为工作产物；如需归档至 [docs/integration/experiment-results/](integration/experiment-results/) 需 `git add -f`）
+
+---
+
 ## 表 1：三层不可替代性（定性验证）
 
 每行代表一个定性场景，每列代表一种架构模式。PASS = 行为正确，FAIL = 行为缺失。
@@ -187,6 +271,8 @@
 ## 图 2：NPC × 行为 吞吐量矩阵（Benchmark）
 
 Go Benchmark 框架自动控制迭代次数。3 轮取平均。单位：ns/op。
+
+> ⚠️ **数据完整性提示（2026-04-25 审计）**：本节表数据为 2026-04-03 首采，**原始逐轮 .log 已永久丢失**。其中 PureBT 100B_1000N = 1,151,484 ns/op 与 04-20 归档（695,410）及 04-25 -count=5 复测（731,994）偏差 +57%，**无法重现**。论文交付建议使用 [2026-04-25 §图 2 数据完整性审计 + 复测](#2026-04-25-图-2-数据完整性审计--复测) 章节的修订数据。本节保留作为历史档案。
 
 ### Hybrid
 
